@@ -1,34 +1,68 @@
 from datetime import datetime
 from typing import List
 import uuid
-from pydantic import BaseModel, EmailStr, constr
-
+from pydantic import BaseModel, EmailStr, constr, field_validator
+import re
+from typing import Dict
+import pydantic
 
 class UserBaseSchema(BaseModel):
     name: str
-    email: EmailStr
-    is_admin: bool
+    role: str
 
     class Config:
         orm_mode = True
 
 
 class CreateUserSchema(UserBaseSchema):
-    password: constr(min_length=8)
-    verified: bool = False
-    is_admin: bool = False
-
-
-class LoginUserSchema(BaseModel):
-    email: EmailStr
-    password: constr(min_length=8)
+    role: str = "USER"
 
 
 class UserResponse(UserBaseSchema):
     id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
+    name: str
+    role: str
+    api_key: str
 
 
-class FilteredUserResponse(UserBaseSchema):
-    id: uuid.UUID
+# class UserBalance(BaseModel):
+#     "Ticker1": 123
+#     "Ticker2": 123123
+
+class InstrumentBase(BaseModel):
+    name: str
+    ticker: str
+
+    class Config:
+        orm_mode = True
+
+    @field_validator('ticker')
+    def validate_ticker(cls, v):
+        reg_exp = r"^[A-Z]{2,10}$"
+        if re.match(reg_exp, v) is None:
+            raise ValueError('Invalid ticker format!')
+        return v
+
+class InstrumentResponse(InstrumentBase):
+    pass
+
+
+class InstrumentCreateSchema(InstrumentBase):
+    pass
+
+
+class BalanceInput(BaseModel):
+    user_id: str
+    ticker: str
+    amount: float
+
+
+class BalanceResponse(BaseModel):
+    success: bool
+
+
+class BalancePrintResponse(pydantic.RootModel):
+    root: Dict[str, float]
+
+    def __getitem__(self, key: str) -> float:
+        return self.__root__[key]

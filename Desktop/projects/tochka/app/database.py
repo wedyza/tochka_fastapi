@@ -18,6 +18,15 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base_var = declarative_base()
 
+
+
+# class Base_M2M(Base_var):
+#     __abstract__ = True
+
+#     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False,
+#                 default=uuid.uuid4)
+
+
 class Base(Base_var):
     __abstract__ = True
 
@@ -25,8 +34,8 @@ class Base(Base_var):
                 default=uuid.uuid4)
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
-    updated_at = Column(TIMESTAMP(timezone=True),
-                        nullable=False, server_default=text("now()"))
+    # updated_at = Column(TIMESTAMP(timezone=True),
+    #                     nullable=False, server_default=text("now()"))
 
 
 def get_db():

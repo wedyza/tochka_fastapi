@@ -1,14 +1,13 @@
 import base64
 from typing import List
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi_jwt_auth import AuthJWT
 from pydantic import BaseModel
-
 from . import models
 from .database import get_db
 from sqlalchemy.orm import Session
 from .config import settings
-
+import traceback
 
 class Settings(BaseModel):
     authjwt_algorithm: str = settings.JWT_ALGORITHM
@@ -34,18 +33,17 @@ class NotVerified(Exception):
 class UserNotFound(Exception):
     pass
 
+class UserNotAdmin(Exception):
+    pass
 
-def require_user(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
+def require_user(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()): #authorization es che
     try:
         Authorize.jwt_required()
         user_id = Authorize.get_jwt_subject()
         user = db.query(models.User).filter(models.User.id == user_id).first()
-
+        
         if not user:
             raise UserNotFound('User no longer exist')
-
-        if not user.verified:
-            raise NotVerified('You are not verified')
 
     except Exception as e:
         error = e.__class__.__name__
@@ -63,3 +61,35 @@ def require_user(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
             status_code=status.HTTP_401_UNAUTHORIZED, detail='Token is invalid or has expired')
     return user_id
 
+
+def require_admin(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
+    try:
+        Authorize.jwt_required()
+        user_id = Authorize.get_jwt_subject()
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+
+        if not user:
+            raise UserNotFound('User no longer exist')
+        
+        if user.role != models.UserRole.ADMIN:
+            raise UserNotAdmin('User is not admin')
+
+    except Exception as e:
+        error = e.__class__.__name__
+        print(traceback.format_exc())
+        if error == 'MissingTokenError':
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail='You are not logged in')
+        if error == 'UserNotFound':
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail='User no longer exist')
+        if error == 'NotVerified':
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail='Please verify your account')
+        if error == 'UserNotAdmin':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail='You are not allowed to do this'
+            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Token is invalid or has expired')
+    return user_id
