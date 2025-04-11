@@ -1,6 +1,6 @@
 
 import uuid
-from .database import Base, Base_var
+from .database import Base, Base_var, Base_del
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, String, Boolean, text, Integer, Float, ForeignKeyConstraint
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
@@ -19,17 +19,17 @@ class DirectionsOrders(Enum): # Надо будет обновить, когда
     BUY = "BUY"
     SELL = "SELL"
 
-class User(Base):
+class User(Base, Base_del):
     __tablename__ = 'users'
     name = Column(String,  nullable=False)
     role = Column(ENUM(UserRole, name="user_role_enum", create_type=False), server_default="USER", nullable=False)
     balance = relationship('Balance')
 
 
-class Instrument(Base):
+class Instrument(Base, Base_del):
     __tablename__ = 'instruments'
-    name = Column(String, nullable=False, unique=True)
-    ticker = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
+    ticker = Column(String, nullable=False)
 
 
 

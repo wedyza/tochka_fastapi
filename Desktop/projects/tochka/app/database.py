@@ -38,6 +38,11 @@ class Base(Base_var):
     #                     nullable=False, server_default=text("now()"))
 
 
+class Base_del():
+    __abstract__ = True
+    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True, default=None)
+
+
 def get_db():
     db = SessionLocal()
     try:
