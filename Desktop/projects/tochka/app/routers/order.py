@@ -47,7 +47,7 @@ def create_order(payload: schemas.LimitOrderCreateInput | schemas.MarketOrderCre
             elif user_rub_balance < user_must_pay:
                 raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
 
-        # order_processing(db, order)
+        order_processing(db, order)
     else:
         need_quantity = payload.qty
         final_price = 0
