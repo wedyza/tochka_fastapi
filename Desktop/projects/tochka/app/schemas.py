@@ -5,6 +5,8 @@ from pydantic import BaseModel, EmailStr, constr, field_validator
 import re
 from typing import Dict
 import pydantic
+from .models import DirectionsOrders
+
 
 class UserBaseSchema(BaseModel):
     name: str
@@ -61,8 +63,45 @@ class BalanceResponse(BaseModel):
     success: bool
 
 
+class DeleteResponse(BaseModel):
+    success: bool
+
 class BalancePrintResponse(pydantic.RootModel):
     root: Dict[str, float]
 
     def __getitem__(self, key: str) -> float:
         return self.__root__[key]
+    
+
+class LimitOrderCreateInput(BaseModel):
+    direction: DirectionsOrders
+    ticker: str
+    qty: int
+    price: int
+
+
+    @field_validator('ticker')
+    def validate_ticker(cls, v):
+        reg_exp = r"^[A-Z]{2,10}$"
+        if re.match(reg_exp, v) is None:
+            raise ValueError('Invalid ticker format!')
+        return v
+
+
+class MarketOrderCreateInput(BaseModel):
+    direction: DirectionsOrders
+    ticker: str
+    qty: int
+
+
+    @field_validator('ticker')
+    def validate_ticker(cls, v):
+        reg_exp = r"^[A-Z]{2,10}$"
+        if re.match(reg_exp, v) is None:
+            raise ValueError('Invalid ticker format!')
+        return v
+
+
+class OrderCreateOutput(BaseModel):
+    ticker: str
+    success: bool

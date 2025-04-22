@@ -1,27 +1,21 @@
 #type: ignore
-
-from datetime import timedelta
 from fastapi import APIRouter, Request, Response, status, Depends, HTTPException
-from pydantic import EmailStr
-
-from app import oauth2
+from sqlalchemy import and_, or_
 from .. import schemas, models, utils
 from sqlalchemy.orm import Session
 from ..database import get_db
-from app.oauth2 import AuthJWT
 from ..config import settings
-
-
 router = APIRouter()
+from ..oauth2 import create_access_token
 ACCESS_TOKEN_EXPIRES_IN = settings.ACCESS_TOKEN_EXPIRES_IN
 REFRESH_TOKEN_EXPIRES_IN = settings.REFRESH_TOKEN_EXPIRES_IN
 
 
 @router.post('/register', status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
-async def register(payload: schemas.CreateUserSchema, response: Response, db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
+async def register(payload: schemas.CreateUserSchema, response: Response, db: Session = Depends(get_db)):
     # Check if user already exist
     user = db.query(models.User).filter(
-        models.User.name == payload.name.lower()
+        and_(models.User.name == payload.name.lower(), models.User.deleted_at == None)
     ).first()
     if user:
         new_user = user
@@ -31,9 +25,7 @@ async def register(payload: schemas.CreateUserSchema, response: Response, db: Se
         db.commit()
         db.refresh(new_user)
 
-    access_token = Authorize.create_access_token(
-        subject=str(new_user.id), expires_time=timedelta(minutes=120))
-    Authorize.set_access_cookies(access_token)
+    access_token = create_access_token({"user_id": str(user.id)})
     
     return {
         'id': new_user.id,
@@ -44,7 +36,7 @@ async def register(payload: schemas.CreateUserSchema, response: Response, db: Se
 
 @router.get('/instrument')
 async def list_instruments(db: Session = Depends(get_db))->list[schemas.InstrumentResponse]:
-    list_of_instruments = db.query(models.Instrument).all()
+    list_of_instruments = db.query(models.Instrument).filter(models.Instrument.deleted_at == None).all()
     return list_of_instruments
 
 

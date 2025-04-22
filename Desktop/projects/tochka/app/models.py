@@ -19,17 +19,19 @@ class DirectionsOrders(Enum): # Надо будет обновить, когда
     BUY = "BUY"
     SELL = "SELL"
 
-class User(Base, Base_del):
+class User(Base):
     __tablename__ = 'users'
     name = Column(String,  nullable=False)
     role = Column(ENUM(UserRole, name="user_role_enum", create_type=False), server_default="USER", nullable=False)
     balance = relationship('Balance')
+    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True, default=None)
 
 
-class Instrument(Base, Base_del):
+class Instrument(Base):
     __tablename__ = 'instruments'
     name = Column(String, nullable=False)
     ticker = Column(String, nullable=False)
+    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True, default=None)
 
 
 
@@ -39,13 +41,16 @@ class Order(Base):
     user_id = Column(UUID(as_uuid=True),ForeignKey(User.id), primary_key=True, nullable=False,
                 default=uuid.uuid4)
     user = relationship('User')
-    quantity = Column(Integer, nullable=False)
+    quantity = Column(Float, nullable=False)
+    filled_quantity = Column(Float, nullable=False, default=0)
     price = Column(Float, nullable=False)
     filled = Column(Boolean, nullable=False, server_default='False')
     instrument_id = Column(UUID(as_uuid=True),ForeignKey(Instrument.id), primary_key=True, nullable=False,
                 default=uuid.uuid4)
     instrument = relationship('Instrument')
     direction = Column(ENUM(DirectionsOrders, name="order_direction_enum", create_type=False), nullable=False)
+    deleted_at = Column(TIMESTAMP(timezone=True), nullable=True, default=None)
+    cancelled = Column(Boolean, nullable=False, default=False)
 
 
 class Balance(Base_var):
@@ -53,7 +58,8 @@ class Balance(Base_var):
     
     user_id = Column(UUID(as_uuid=True),ForeignKey(User.id), primary_key=True, nullable=False)
     instrument_id = Column(UUID(as_uuid=True),ForeignKey(Instrument.id), primary_key=True, nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Float, nullable=False, default=0)
+    locked = Column(Float, nullable=False, default=0)
 
 
 class Transaction(Base):
