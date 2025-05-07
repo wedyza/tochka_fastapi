@@ -1,12 +1,11 @@
 #type: ignore
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Response, HTTPException, Depends, status
 from ..database import get_db
 from sqlalchemy.orm import Session
 from .. import models, schemas, oauth2
-from sqlalchemy import and_, func
-from ..functions import check_rub_balance, making_a_deal
-
+from sqlalchemy import and_, func, text
+from ..functions import check_custom_balance, making_a_deal, order_processing, unlock_custom_balance
 
 router = APIRouter()
 
@@ -16,12 +15,39 @@ def list_orders(db: Session = Depends(get_db), user_id: str = Depends(oauth2.req
     pass
 
 
-@router.post('/')
-def create_order(payload: schemas.LimitOrderCreateInput | schemas.MarketOrderCreateInput,db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.OrderCreateOutput:
-    print(type(payload))
+@router.get('/{order_id}')
+def get_order(order_id: str, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user)):
+    pass
+
+
+@router.delete('/{order_id}')
+def delete_order(order_id: str, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.DeleteResponse:
+    order = db.query(models.Order).filter(
+        and_(models.Order.deleted_at == None, models.Order.id == order_id, models.Order.filled == False)
+    ).first()
+
+    if order is None:
+        raise HTTPException(detail={'detail': 'Не найдено активного заказа с таким ID'}, status_code=status.HTTP_404_NOT_FOUND)
     
+    order.deleted_at = text('now()')
+
+    rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
+    if order.direction == models.DirectionsOrders.BUY:
+        unlock_custom_balance(db, order.user_id, (order.quantity - order.filled_quantity)*order.price, rub_instrument.id)
+    else:
+        unlock_custom_balance(db, order.user_id, order.quantity - order.filled_quantity, order.instrument_id)
+
+    db.commit()
+    db.refresh(order)
+
+    return {
+        'success': True
+    }
+
+@router.post('/')
+def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.OrderCreateOutput:
     instrument = db.query(models.Instrument).filter(
-        and_(models.Instrument.deleted_at != None, models.Instrument.ticker == payload.ticker)
+        and_(models.Instrument.deleted_at == None, models.Instrument.ticker == payload.ticker)
     ).first()
 
     if not instrument:
@@ -33,38 +59,38 @@ def create_order(payload: schemas.LimitOrderCreateInput | schemas.MarketOrderCre
     order.instrument_id = instrument.id
     order.quantity = payload.qty
 
-    user_rub_balance = check_rub_balance(db, user_id)
-    if type(payload) == schemas.LimitOrderCreateInput:
-        pass
+    if payload.price != 0:
         # user = db.query(models.User).filter(models.User.id==user_id).first()
         user_must_pay = payload.qty * payload.price
 
         order.price = payload.price
         
         if payload.direction == models.DirectionsOrders.BUY:
-            if user_rub_balance == 0:
-                raise HTTPException(status_code=400, detail='На счету пользователя нет рублей, невозможно сделать заказ')
-            elif user_rub_balance < user_must_pay:
+            user_rub_balance = check_custom_balance(db, user_id, 'RUB')
+            if user_rub_balance < user_must_pay:
                 raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
-
+        else:
+            user_custom_balance = check_custom_balance(db, user_id, instrument.ticker)
+            if user_custom_balance < order.quantity:
+                raise HTTPException(status_code=400, detail='На счету пользователя не хватает выбранной валюты')
         order_processing(db, order)
     else:
         need_quantity = payload.qty
         final_price = 0
         opposite_order_direction = models.DirectionsOrders.BUY if payload.direction == models.DirectionsOrders.SELL else payload.direction
 
-        currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(models.Order.direction == opposite_order_direction)
+        currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None))
         if need_quantity > currency_orders_quantity:
             raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите купить.')
         
         if payload.direction == models.DirectionsOrders.BUY:
-            orders = db.query(models.Order).filter(
-                models.Order.direction == opposite_order_direction
-            ).order_by(models.Order.price.asc()).all()
+            orders = db.query(models.Order).filter(and_(
+                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False
+            )).order_by(models.Order.price.asc()).all()
         else:
-            orders = db.query(models.Order).filter(
-                models.Order.direction == opposite_order_direction
-            ).order_by(models.Order.price.desc()).all()
+            orders = db.query(models.Order).filter(and_(
+                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False
+            )).order_by(models.Order.price.desc()).all()
 
         stocked_orders = list()
         for another_order in orders:

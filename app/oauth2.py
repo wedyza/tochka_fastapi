@@ -1,12 +1,9 @@
 import base64
 from typing import List
 from fastapi import Depends, HTTPException, status, Header
-from fastapi_jwt_auth import AuthJWT
-from pydantic import BaseModel
 from . import models
 from .database import get_db
 from sqlalchemy.orm import Session
-from .config import settings
 import traceback
 from jose import JWTError, jwt
 import uuid

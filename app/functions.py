@@ -36,45 +36,87 @@ def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     raise HTTPException(status_code=400, detail='Невозможно снять того, чего нету!')
 
 
-def check_rub_balance(db:Session, user_id:str):
-    rub_instrument = db.query(models.Instrument).filter(models.Instrument.ticker=="RUB").first()
-
+def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str):
+    rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.id==instrument_id, models.Instrument.deleted_at == None)).first()
+    
     if not rub_instrument:
-        raise HTTPException(status_code=404, detail='В системе отсутствуют рубли!')
+        raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
+
+    user = db.query(models.User).filter(models.User.id==user_id).first()
+    for balance in user.balance:
+        if balance.instrument_id == rub_instrument.id:
+            balance.locked -= amount
+            break
+    
+    db.commit()
+    db.refresh(balance)
+
+
+
+def lock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str):
+    rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.id==instrument_id, models.Instrument.deleted_at == None)).first()
+    
+    if not rub_instrument:
+        raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
+
+    user = db.query(models.User).filter(models.User.id==user_id).first()
+    for balance in user.balance:
+        if balance.instrument_id == rub_instrument.id:
+            balance.locked = amount
+            break
+    
+    db.commit()
+    db.refresh(balance)
+
+
+def check_custom_balance(db:Session, user_id:str, ticker: str):
+    custom_instrument = db.query(models.Instrument).filter(models.Instrument.ticker==ticker).first()
+
+    if not custom_instrument:
+        raise HTTPException(status_code=404, detail='В системе отсутствуют данный инструмент!')
     
     user = db.query(models.User).filter(models.User.id==user_id).first()
     try:
         for balance in user.balance:
-            if balance.instrument_id == rub_instrument.id:
-                return balance.amount
+            if balance.instrument_id == custom_instrument.id:
+                return balance.amount - balance.locked
+        return 0
     except:
         return 0
 
 
 def order_processing(db:Session, order:models.Order):
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
     if order.direction == models.DirectionsOrders.SELL:
-        opposite_orders = db.query(models.Order).filter(
-            models.Order.direction == models.DirectionsOrders.BUY
-        ).filter(models.Order.price >= order.price).all() 
+        lock_custom_balance(db, order.user_id, order.quantity, order.instrument.id)
+        opposite_orders = db.query(models.Order).filter(and_(
+            models.Order.direction == models.DirectionsOrders.BUY, models.Order.filled == False
+        )).filter(models.Order.price >= order.price).all() 
     else:
-        opposite_orders = db.query(models.Order).filter(
-            models.Order.direction == models.DirectionsOrders.SELL
-        ).filter(models.Order.price <= order.price).all()
+        lock_custom_balance(db, order.user_id, order.quantity * order.price, rub_instrument.id)
+        opposite_orders = db.query(models.Order).filter(and_(
+            models.Order.direction == models.DirectionsOrders.SELL, models.Order.filled == False
+        )).filter(models.Order.price <= order.price).all()
     
     for another_order in opposite_orders:
-        order = db.refresh(order)
+        order = db.query(models.Order).filter(models.Order.id == order.id).first()
         if order.filled:
             print("FILLED ON FULL")
-            break
+            return
         if order.direction == models.DirectionsOrders.BUY:
             making_a_deal(order, another_order, db)
         else:
             making_a_deal(another_order, order, db)
+    
 
 
 def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
-    buyer_query = db.query(models.User).filter(id==buy_order.user_id)
-    seller_query = db.query(models.User).filter(id==sell_order.user_id)
+    buyer_query = db.query(models.User).filter(models.User.id==buy_order.user_id)
+    seller_query = db.query(models.User).filter(models.User.id==sell_order.user_id)
 
     buyer = buyer_query.first()
     seller = seller_query.first()
@@ -93,15 +135,23 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
         sell_order.filled = True
         final_quantity = buy_quantity  
     
-    withdraw_balance(db, buyer.id, 'RUB', sell_order.price * final_quantity)
-    deposit_balance(db, seller.id, 'RUB', sell_order.price * final_quantity)
+    buy_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
+
+    withdraw_balance(db, buyer.id, buy_instrument.id, sell_order.price * final_quantity)
+    deposit_balance(db, seller.id, buy_instrument.id, sell_order.price * final_quantity)
+    unlock_custom_balance(db, buyer.id, sell_order.price * final_quantity, buy_instrument.id)
 
     buy_order.filled_quantity += final_quantity
     sell_order.filled_quantity += final_quantity
 
-    deposit_balance(db, buyer.id, buy_order.instrument.ticker, final_quantity)
-    withdraw_balance(db, seller.id, buy_order.instrument.ticker, final_quantity)
+    # print(final_quantity)
+    # print(buy_order.filled_quantity)
+
+    deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
+    withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
+    unlock_custom_balance(db, seller.id,final_quantity, sell_order.instrument_id)
 
     db.commit()
-    db.refresh()
-    pass
+    db.refresh(buy_order)
+    db.refresh(sell_order)
+    # pass

@@ -50,7 +50,7 @@ class Order(Base):
     instrument = relationship('Instrument')
     direction = Column(ENUM(DirectionsOrders, name="order_direction_enum", create_type=False), nullable=False)
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True, default=None)
-    cancelled = Column(Boolean, nullable=False, default=False)
+    # cancelled = Column(Boolean, nullable=False, default=False)
 
 
 class Balance(Base_var):

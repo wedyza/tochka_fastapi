@@ -24,8 +24,7 @@ async def register(payload: schemas.CreateUserSchema, response: Response, db: Se
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-
-    access_token = create_access_token({"user_id": str(user.id)})
+    access_token = create_access_token({"user_id": str(new_user.id)})
     
     return {
         'id': new_user.id,

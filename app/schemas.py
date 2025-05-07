@@ -3,7 +3,7 @@ from typing import List
 import uuid
 from pydantic import BaseModel, EmailStr, constr, field_validator
 import re
-from typing import Dict
+from typing import Dict, Optional
 import pydantic
 from .models import DirectionsOrders
 
@@ -73,11 +73,11 @@ class BalancePrintResponse(pydantic.RootModel):
         return self.__root__[key]
     
 
-class LimitOrderCreateInput(BaseModel):
+class OrderCreateInput(BaseModel):
     direction: DirectionsOrders
     ticker: str
     qty: int
-    price: int
+    price: Optional [int]
 
 
     @field_validator('ticker')
