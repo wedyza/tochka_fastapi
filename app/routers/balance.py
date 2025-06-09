@@ -12,5 +12,5 @@ def get_me(db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_
     answer = {}
     for coin in user.balance:
         instrument = db.query(models.Instrument).filter(models.Instrument.id == coin.instrument_id).first()
-        answer[instrument.ticker] = coin.amount - coin.locked
+        answer[instrument.ticker] = coin.amount
     return answer

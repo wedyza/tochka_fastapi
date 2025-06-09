@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 import uuid
-from pydantic import BaseModel, EmailStr, constr, field_validator
+from pydantic import BaseModel, EmailStr, constr, field_validator, Field, validator
 import re
 from typing import Dict, Optional
 import pydantic
@@ -105,3 +105,27 @@ class MarketOrderCreateInput(BaseModel):
 class OrderCreateOutput(BaseModel):
     ticker: str
     success: bool
+
+
+
+class OrderInOrderbook(BaseModel):
+    price: int
+    quantity: int = Field(serialization_alias="qty")
+
+
+class OrderbookResponse(BaseModel):
+    bid_levels: List[OrderInOrderbook]
+    ask_levels: List[OrderInOrderbook]
+
+class OrderBody(BaseModel):
+    direction: DirectionsOrders
+    ticker: str 
+    qty: int 
+    price: float
+
+class OrdersResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    timestamp: datetime 
+    body: OrderBody
+    filled: bool

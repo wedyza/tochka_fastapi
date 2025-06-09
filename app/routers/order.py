@@ -6,18 +6,43 @@ from sqlalchemy.orm import Session
 from .. import models, schemas, oauth2
 from sqlalchemy import and_, func, text
 from ..functions import check_custom_balance, making_a_deal, order_processing, unlock_custom_balance
+from typing import List
 
 router = APIRouter()
 
 
+def fill_list(order:models.Order, ticker:str):
+    return {
+        "id": order.id,
+        "user_id": order.user_id,
+        "timestamp": order.created_at,
+        "filled": order.filled,
+        "body": {
+            "direction": order.direction,
+            "price": order.price,
+            'qty': order. quantity,
+            'ticker': ticker
+        }
+    }
+
 @router.get('/')
-def list_orders(db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user)):
-    pass
+def list_orders(db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->List[schemas.OrdersResponse]:
+    orders = db.query(models.Order).filter(models.Order.deleted_at == None).all()
+    answer = []
+
+    for order in orders:
+        ticker = db.query(models.Instrument).filter(models.Instrument.id == order.instrument_id).first()
+        answer.append(fill_list(order, ticker.ticker))
+    return answer
 
 
 @router.get('/{order_id}')
-def get_order(order_id: str, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user)):
-    pass
+def get_order(order_id: str, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.OrdersResponse:
+    order = db.query(models.Order).filter(models.Order.deleted_at == None).filter(models.Order.id == order_id).first()
+    if order is None:
+        raise HTTPException(detail='Не найдено активного заказа с таким ID', status_code=status.HTTP_404_NOT_FOUND)
+    ticker = db.query(models.Instrument).filter(models.Instrument.id == order.instrument_id).first()
+    return fill_list(order, ticker.ticker)
 
 
 @router.delete('/{order_id}')
@@ -27,7 +52,7 @@ def delete_order(order_id: str, db: Session = Depends(get_db), user_id: str = De
     ).first()
 
     if order is None:
-        raise HTTPException(detail={'detail': 'Не найдено активного заказа с таким ID'}, status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(detail='Не найдено активного заказа с таким ID', status_code=status.HTTP_404_NOT_FOUND)
     
     order.deleted_at = text('now()')
 
@@ -125,5 +150,5 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
                 making_a_deal(another_order, order ,db)
     return {
         'success': True,
-        'ticker': 'Sosal mne?'
+        'order_id': order.id
     }
