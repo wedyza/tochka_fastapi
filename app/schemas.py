@@ -104,7 +104,7 @@ class MarketOrderCreateInput(BaseModel):
 
 class OrderCreateOutput(BaseModel):
     ticker: str
-    success: bool
+    order_id: uuid.UUID
 
 
 
