@@ -70,7 +70,7 @@ def delete_order(order_id: str, db: Session = Depends(get_db), user_id: str = De
     }
 
 @router.post('')
-def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.OrderCreateOutput:
+def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user)):
     instrument = db.query(models.Instrument).filter(
         and_(models.Instrument.deleted_at == None, models.Instrument.ticker == payload.ticker)
     ).first()
