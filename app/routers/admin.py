@@ -26,12 +26,12 @@ def delete_user(user_id: str, db: Session = Depends(get_db), admin_id: str = Dep
 
 
 @router.post('/instrument', response_model=schemas.InstrumentResponse, status_code=status.HTTP_201_CREATED)
-def add_instrument(payload: schemas.InstrumentCreateSchema, db: Session = Depends(get_db)):
+def add_instrument(payload: schemas.InstrumentCreateSchema, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin))->schemas.InstrumentCreateSchema:
     instrument = db.query(models.Instrument).filter(and_(or_(
         models.Instrument.name == payload.name.lower(), models.Instrument.ticker == payload.ticker), models.Instrument.deleted_at == None
     )).first()
     if instrument:
-        raise HTTPException(status_code=400, detail='Инструмент с одним из этих показателей уже существует!')
+        raise HTTPException(status_code=422, detail='Инструмент с одним из этих показателей уже существует!')
     new_instrument = models.Instrument(**payload.model_dump())
     db.add(new_instrument)
     db.commit()
