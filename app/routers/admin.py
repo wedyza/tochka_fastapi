@@ -11,10 +11,10 @@ router = APIRouter()
 
 @router.delete('/user/{user_id}')
 def delete_user(user_id: str, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin))->schemas.DeleteResponse:
-    user = db.query(models.User).filter(
-        and_(models.User.id == user_id, models.User.deleted_at == None)
-    ).first()
-
+    try:
+        user = db.query(models.User).filter(models.User.id == payload.user_id).filter(models.User.deleted_at == None).first()
+    except:
+        raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
     if not user:
         raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
     user.deleted_at = text('now()')
@@ -62,7 +62,10 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
 
 @router.post('/balance/deposit', response_model=schemas.BalanceResponse)
 def deposit(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin)):
-    user = db.query(models.User).filter(models.User.id == payload.user_id).first()
+    try:
+        user = db.query(models.User).filter(models.User.id == payload.user_id).filter(models.User.deleted_at == None).first()
+    except:
+        raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
     if not user:
         raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
     instrument = db.query(models.Instrument).filter(models.Instrument.ticker == payload.ticker).filter(models.Instrument.deleted_at == None).first()
@@ -78,7 +81,6 @@ def deposit(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_i
 
 @router.post('/balance/withdraw', response_model=schemas.BalanceResponse)
 def withdraw(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin)):
-    print(payload)
     try:
         user = db.query(models.User).filter(models.User.id == payload.user_id).filter(models.User.deleted_at == None).first()
     except:

@@ -83,6 +83,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
     order.user_id = user_id
     order.instrument_id = instrument.id
     order.quantity = payload.qty
+    order.filled_quantity = 0
 
     if payload.price != 0:
         # user = db.query(models.User).filter(models.User.id==user_id).first()
@@ -124,8 +125,6 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         stocked_orders = list()
         for another_order in orders:
             local_need_quantity = another_order.quantity - another_order.filled_quantity
-            print(f"order.filled_quantity - {order.filled_quantity}")
-            print(f"local_need_quantity - {local_need_quantity}")
             if order.filled_quantity + local_need_quantity > order.quantity:
                 order_count = order.quantity - order.filled_quantity
                 another_order.filled_quantity += order_count
