@@ -33,6 +33,7 @@ def add_instrument(payload: schemas.InstrumentCreateSchema, db: Session = Depend
     if instrument:
         raise HTTPException(status_code=422, detail='Инструмент с одним из этих показателей уже существует!')
     new_instrument = models.Instrument(**payload.model_dump())
+    print(f"Создан инструмент - {new_instrument.ticker}")
     db.add(new_instrument)
     db.commit()
     db.refresh(new_instrument)
@@ -43,8 +44,8 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
     instrument = db.query(models.Instrument).filter(
         and_(models.Instrument.ticker == ticker, models.Instrument.deleted_at == None)
     ).first()
+    print(f"Пытаюсь удалить - {ticker}")
     if not instrument:
-        print(ticker)
         raise HTTPException(status_code=404, detail='Не найдено инструмента с таким тикером!')
     
     instrument.deleted_at = text('now()')
