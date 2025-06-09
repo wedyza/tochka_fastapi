@@ -25,7 +25,7 @@ def fill_list(order:models.Order, ticker:str):
         }
     }
 
-@router.get('/')
+@router.get('')
 def list_orders(db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->List[schemas.OrdersResponse]:
     orders = db.query(models.Order).filter(models.Order.deleted_at == None).all()
     answer = []
@@ -69,7 +69,7 @@ def delete_order(order_id: str, db: Session = Depends(get_db), user_id: str = De
         'success': True
     }
 
-@router.post('/')
+@router.post('')
 def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.OrderCreateOutput:
     instrument = db.query(models.Instrument).filter(
         and_(models.Instrument.deleted_at == None, models.Instrument.ticker == payload.ticker)

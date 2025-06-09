@@ -44,7 +44,6 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
     instrument = db.query(models.Instrument).filter(
         and_(models.Instrument.ticker == ticker, models.Instrument.deleted_at == None)
     ).first()
-    print(f"Пытаюсь удалить - {ticker}")
     if not instrument:
         raise HTTPException(status_code=404, detail='Не найдено инструмента с таким тикером!')
     
@@ -65,14 +64,10 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
 def deposit(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin)):
     user = db.query(models.User).filter(models.User.id == payload.user_id).first()
     if not user:
-        print(payload)
-        print(f"Виноват юзер")
         raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
     instrument = db.query(models.Instrument).filter(models.Instrument.ticker == payload.ticker).filter(models.Instrument.deleted_at == None).first()
 
     if not instrument:
-        print(payload)
-        print(f"Виноват тикер")
         raise HTTPException(status_code=404, detail='Не найдено инструмента с таким тикером!')
     functions.deposit_balance(db, user_id=user.id, instrument_id=instrument.id, amount=payload.amount)
 
@@ -83,7 +78,8 @@ def deposit(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_i
 
 @router.post('/balance/withdraw', response_model=schemas.BalanceResponse)
 def withdraw(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin)):
-    user = db.query(models.User).filter(models.User.id == payload.user_id).first()
+    user = db.query(models.User).filter(models.User.id == payload.user_id).filter(models.User.deleted_at == None).first()
+    print(payload)
     if not user:
         raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
 
