@@ -93,11 +93,13 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         if payload.direction == models.DirectionsOrders.BUY:
             user_rub_balance = check_custom_balance(db, user_id, 'RUB')
             if user_rub_balance < user_must_pay:
-                raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
+                # raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
+                return Response({'detail': 'first one'} ,status_code=400)
         else:
             user_custom_balance = check_custom_balance(db, user_id, instrument.ticker)
             if user_custom_balance < order.quantity:
-                raise HTTPException(status_code=400, detail='На счету пользователя не хватает выбранной валюты')
+                # raise HTTPException(status_code=400, detail='На счету пользователя не хватает выбранной валюты')
+                return Response({'detail': 'secnd one'} ,status_code=400)
         order_processing(db, order)
     else:
         need_quantity = payload.qty
@@ -107,7 +109,8 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None, models.Order.instrument_id == instrument.id)).first()[0]
     
         if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
-            raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
+            # raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
+                return Response({'detail': 'thied one'} ,status_code=400)
         
         if payload.direction == models.DirectionsOrders.BUY:
             orders = db.query(models.Order).filter(and_(
@@ -135,7 +138,8 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
             stocked_orders.append(another_order)
             final_price = another_order.quantity * another_order.price
             if payload.direction == models.DirectionsOrders.BUY and final_price > user_rub_balance:
-                raise HTTPException(status_code=400, detail='На счету пользователя недостаточно денег для закрытия заказа')
+                # raise HTTPException(status_code=400, detail='На счету пользователя недостаточно денег для закрытия заказа')
+                return Response({'detail': 'fourth one'} ,status_code=400)
             
             if order.filled_quantity + local_need_quantity == order.quantity:
                 break
