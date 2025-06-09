@@ -28,7 +28,7 @@ def delete_user(user_id: str, db: Session = Depends(get_db), admin_id: str = Dep
 @router.post('/instrument', response_model=schemas.InstrumentResponse, status_code=status.HTTP_201_CREATED)
 def add_instrument(payload: schemas.InstrumentCreateSchema, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin))->schemas.InstrumentCreateSchema:
     instrument = db.query(models.Instrument).filter(and_(or_(
-        models.Instrument.name == payload.name.lower(), models.Instrument.ticker == payload.ticker), models.Instrument.deleted_at == None
+        models.Instrument.name == payload.name, models.Instrument.ticker == payload.ticker), models.Instrument.deleted_at == None
     )).first()
     if instrument:
         raise HTTPException(status_code=422, detail='Инструмент с одним из этих показателей уже существует!')
@@ -43,8 +43,8 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
     instrument = db.query(models.Instrument).filter(
         and_(models.Instrument.ticker == ticker, models.Instrument.deleted_at == None)
     ).first()
-    print(instrument)
     if not instrument:
+        print(ticker)
         raise HTTPException(status_code=404, detail='Не найдено инструмента с таким тикером!')
     
     instrument.deleted_at = text('now()')
