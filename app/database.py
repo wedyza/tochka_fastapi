@@ -36,9 +36,6 @@ class Base_del():
 
 def get_db():
     db = SessionLocal()
-
-    with db.begin():
-
     try:
         yield db
     finally:
