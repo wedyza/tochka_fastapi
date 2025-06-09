@@ -43,11 +43,13 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
     instrument = db.query(models.Instrument).filter(
         and_(models.Instrument.ticker == ticker, models.Instrument.deleted_at == None)
     ).first()
-
+    print(instrument)
     if not instrument:
         raise HTTPException(status_code=404, detail='Не найдено инструмента с таким тикером!')
     
     instrument.deleted_at = text('now()')
+
+    db.query(models.Balance).filter(models.Balance.instrument_id == instrument.id).delete()
     db.commit()
     db.refresh(instrument)
 
@@ -62,13 +64,13 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
 def deposit(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin)):
     user = db.query(models.User).filter(models.User.id == payload.user_id).first()
     if not user:
+        print("Виноват юзер")
         raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
-
-    instrument = db.query(models.Instrument).filter(models.Instrument.ticker == payload.ticker).first()
+    instrument = db.query(models.Instrument).filter(models.Instrument.ticker == payload.ticker).filter(models.Instrument.deleted_at == None).first()
 
     if not instrument:
+        print("Виноват тикер")
         raise HTTPException(status_code=404, detail='Не найдено инструмента с таким тикером!')
-
     functions.deposit_balance(db, user_id=user.id, instrument_id=instrument.id, amount=payload.amount)
 
     return {

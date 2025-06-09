@@ -29,10 +29,6 @@ class Base(Base_var):
     # updated_at = Column(TIMESTAMP(timezone=True),
     #                     nullable=False, server_default=text("now()"))
 
-
-def init_db():
-    Base.metadata.create_all(bind=engine)
-
 class Base_del():
     __abstract__ = True
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True, default=None)
@@ -40,6 +36,9 @@ class Base_del():
 
 def get_db():
     db = SessionLocal()
+
+    with db.begin():
+
     try:
         yield db
     finally:

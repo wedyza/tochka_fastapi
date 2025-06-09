@@ -48,7 +48,7 @@ def require_user(db: Session = Depends(get_db), Authorization: str = Header()): 
         token = Authorization.split(' ')[1]
         user_id = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = uuid.UUID(user_id['user_id'])
-        user = db.query(models.User).filter(models.User.id == user_id).first()
+        user = db.query(models.User).filter(models.User.id == user_id).filter(models.User.deleted_at == None).first()
         
         if not user:
             raise UserNotFound('User no longer exist')
@@ -74,7 +74,7 @@ def require_admin(db: Session = Depends(get_db), Authorization: str = Header()):
         token = Authorization.split(' ')[1]
         user_id = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = uuid.UUID(user_id['user_id'])
-        user = db.query(models.User).filter(models.User.id == user_id).first()
+        user = db.query(models.User).filter(models.User.id == user_id).filter(models.User.deleted_at == None).first()
 
         if not user:
             raise UserNotFound('User no longer exist')
