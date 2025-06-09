@@ -77,7 +77,7 @@ class OrderCreateInput(BaseModel):
     direction: DirectionsOrders
     ticker: str
     qty: int
-    price: Optional [int]
+    price: Optional [int] = 0
 
 
     @field_validator('ticker')
