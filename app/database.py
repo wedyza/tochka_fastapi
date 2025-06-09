@@ -12,7 +12,9 @@ import uuid
 SQLALCHEMY_DATABASE_URL = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@postgres:{settings.DATABASE_PORT}/{settings.POSTGRES_DB}"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL
+    SQLALCHEMY_DATABASE_URL,
+    pool_size=20,
+    max_overflow=0
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -27,7 +29,7 @@ class Base(Base_var):
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
     # updated_at = Column(TIMESTAMP(timezone=True),
-    #                     nullable=False, server_default=text("now()"))
+#                     nullable=False, server_default=text("now()"))
 
 class Base_del():
     __abstract__ = True

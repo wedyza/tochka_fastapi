@@ -54,7 +54,7 @@ class InstrumentCreateSchema(InstrumentBase):
 
 
 class BalanceInput(BaseModel):
-    user_id: str
+    user_id: uuid.UUID
     ticker: str
     amount: float
 

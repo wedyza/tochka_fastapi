@@ -7,6 +7,7 @@ from .. import models, schemas, oauth2
 from sqlalchemy import and_, func, text
 from ..functions import check_custom_balance, making_a_deal, order_processing, unlock_custom_balance
 from typing import List
+from uuid import UUID
 
 router = APIRouter()
 
@@ -46,7 +47,7 @@ def get_order(order_id: str, db: Session = Depends(get_db), user_id: str = Depen
 
 
 @router.delete('/{order_id}')
-def delete_order(order_id: str, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.DeleteResponse:
+def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.DeleteResponse:
     order = db.query(models.Order).filter(
         and_(models.Order.deleted_at == None, models.Order.id == order_id, models.Order.filled == False)
     ).first()
