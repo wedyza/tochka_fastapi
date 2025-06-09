@@ -28,7 +28,7 @@ def fill_list(order:models.Order, ticker:str):
 
 @router.get('')
 def list_orders(db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->List[schemas.OrdersResponse]:
-    orders = db.query(models.Order).filter(models.Order.deleted_at == None).all()
+    orders = db.query(models.Order).filter(models.Order.deleted_at == None).filter(models.Order.user_id == user_id).all()
     answer = []
 
     for order in orders:
