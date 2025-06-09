@@ -105,6 +105,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         opposite_order_direction = models.DirectionsOrders.BUY if payload.direction == models.DirectionsOrders.SELL else payload.direction
 
         currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None))
+        print(currency_orders_quantity)
         if need_quantity > currency_orders_quantity:
             raise HTTPException(status_code=422, detail='В данный момент в стакане нет столько валюты, сколько вы хотите купить.')
         
