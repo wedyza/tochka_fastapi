@@ -104,18 +104,18 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         final_price = 0
         opposite_order_direction = models.DirectionsOrders.BUY if payload.direction == models.DirectionsOrders.SELL else payload.direction
 
-        currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None)).first()
+        currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None, models.Order.instrument_id == instrument.id)).first()[0]
         print(currency_orders_quantity)
         if need_quantity > currency_orders_quantity:
-            raise HTTPException(status_code=422, detail='В данный момент в стакане нет столько валюты, сколько вы хотите купить.')
+            raise HTTPException(status_code=422, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
         
         if payload.direction == models.DirectionsOrders.BUY:
             orders = db.query(models.Order).filter(and_(
-                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False
+                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False, models.Order.instrument_id == instrument.id
             )).order_by(models.Order.price.asc()).all()
         else:
             orders = db.query(models.Order).filter(and_(
-                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False
+                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False, models.Order.instrument_id == instrument.id
             )).order_by(models.Order.price.desc()).all()
 
         stocked_orders = list()
@@ -126,7 +126,6 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
                 another_order.filled_quantity += order_count
                 order.filled_quantity += order_count
 
-                # another_order_query = db.query(models.Order).filter(id == another_order.id).update(another_order.dict(exclude_unset=True), synchronize_session=False)
                 db.commit()
                 break
 
