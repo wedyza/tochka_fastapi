@@ -42,7 +42,7 @@ async def list_instruments(db: Session = Depends(get_db))->list[schemas.Instrume
 @router.get('/orderbook/{ticker}')
 async def get_orderbook(ticker:str, limit = 10, db: Session = Depends(get_db))->schemas.OrderbookResponse:
     ticker_entity = db.query(models.Instrument).filter(models.Instrument.ticker == ticker).filter(models.Instrument.deleted_at == None).first()
-    base_orders = db.query(models.Order).filter(models.Order.deleted_at == None).filter(models.Order.instrument_id == ticker_entity.id)
+    base_orders = db.query(models.Order).filter(models.Order.deleted_at == None).filter(models.Order.instrument_id == ticker_entity.id).filter(models.Order.filled == False)
     return {
         "bid_levels": base_orders.filter(models.Order.direction == models.DirectionsOrders.BUY).all(),
         "ask_levels": base_orders.filter(models.Order.direction == models.DirectionsOrders.SELL).all()

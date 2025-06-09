@@ -78,8 +78,8 @@ def deposit(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_i
 
 @router.post('/balance/withdraw', response_model=schemas.BalanceResponse)
 def withdraw(payload:schemas.BalanceInput, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin)):
-    user = db.query(models.User).filter(models.User.id == payload.user_id).filter(models.User.deleted_at == None).first()
     print(payload)
+    user = db.query(models.User).filter(models.User.id == payload.user_id).filter(models.User.deleted_at == None).first()
     if not user:
         raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
 
