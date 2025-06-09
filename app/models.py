@@ -43,7 +43,7 @@ class Order(Base):
     user = relationship('User')
     quantity = Column(Float, nullable=False)
     filled_quantity = Column(Float, nullable=False, default=0)
-    price = Column(Float, nullable=False)
+    price = Column(Float, nullable=True)
     filled = Column(Boolean, nullable=False, server_default='False')
     instrument_id = Column(UUID(as_uuid=True),ForeignKey(Instrument.id), primary_key=True, nullable=False,
                 default=uuid.uuid4)

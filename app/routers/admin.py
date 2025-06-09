@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.delete('/user/{user_id}')
 def delete_user(user_id: UUID, db: Session = Depends(get_db), admin_id: str = Depends(oauth2.require_admin))->schemas.DeleteResponse:
-    user = db.query(models.User).filter(models.User.id == payload.user_id).filter(models.User.deleted_at == None).first()
+    user = db.query(models.User).filter(models.User.id == user_id).filter(models.User.deleted_at == None).first()
     if not user:
         raise HTTPException(status_code=404, detail='Пользователь с таким ID не найден!')
     user.deleted_at = text('now()')
