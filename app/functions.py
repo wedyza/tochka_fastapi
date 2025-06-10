@@ -128,13 +128,19 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     if buy_quantity > sell_quantity:
         final_quantity = sell_quantity
         sell_order.filled = True
+        sell_order.status = models.StatusOrders.EXECUTED
+        buy_order.status = models.StatusOrders.PARTIALLY_EXECUTED
     elif buy_quantity < sell_quantity:
         final_quantity = buy_quantity
         buy_order.filled = True
+        buy_order.status = models.StatusOrders.EXECUTED
+        sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
     else:
         buy_order.filled = True
         sell_order.filled = True
         final_quantity = buy_quantity  
+        buy_order.status = models.StatusOrders.EXECUTED
+        sell_order.status = models.StatusOrders.EXECUTED
     
     buy_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
 

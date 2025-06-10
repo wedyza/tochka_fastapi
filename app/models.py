@@ -13,11 +13,15 @@ class UserRole(Enum):
 
 class StatusOrders(Enum): # Надо будет обновить, когда расскажут поподробнее
     NEW = "NEW"
-    OLD = "OLD"
+    EXECUTED = "EXECUTED"
+    PARTIALLY_EXECUTED = "PARTIALLY_EXECUTED"
+    CANCELLED = "CANCELLED" 
 
 class DirectionsOrders(Enum): # Надо будет обновить, когда расскажут поподробнее
     BUY = "BUY"
     SELL = "SELL"
+
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -37,7 +41,7 @@ class Instrument(Base):
 
 class Order(Base):
     __tablename__ = 'orders'
-    # status = Column(ENUM())
+    status = Column(ENUM(StatusOrders, name='status_order_enum', create_type=False), nullable=False, server_default="NEW")
     user_id = Column(UUID(as_uuid=True),ForeignKey(User.id), primary_key=True, nullable=False,
                 default=uuid.uuid4)
     user = relationship('User')

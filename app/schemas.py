@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, constr, field_validator, Field, valida
 import re
 from typing import Dict, Optional
 import pydantic
-from .models import DirectionsOrders
+from .models import DirectionsOrders, StatusOrders
 
 
 class UserBaseSchema(BaseModel):
@@ -136,3 +136,4 @@ class OrdersResponse(BaseModel):
     timestamp: datetime 
     body: OrderBody | OrderBodyWithoutPrice
     filled: bool
+    status: StatusOrders

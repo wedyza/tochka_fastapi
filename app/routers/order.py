@@ -58,7 +58,8 @@ def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = D
         raise HTTPException(detail='Не найдено активного заказа с таким ID', status_code=status.HTTP_404_NOT_FOUND)
     
     order.deleted_at = text('now()')
-
+    order.status = models.StatusOrders.CANCELLED
+    
     rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
     if order.direction == models.DirectionsOrders.BUY:
         print(f"id: {order.id}, price:{order.price}, quantity:{order.quantity}, filled_quantity: {order.filled_quantity}")
