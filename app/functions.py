@@ -7,11 +7,14 @@ from sqlalchemy import and_
 def deposit_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     balance_instance = db.query(models.Balance).filter(and_(models.Balance.user_id == user_id, models.Balance.instrument_id == instrument_id)).first()
     print(f"trying to deposit - {balance_instance}")
+    print(f"user_id = {user_id}, instrument_id - {instrument_id}")
     if not balance_instance is None:
+        print("successful += ")
         balance_instance.amount += amount
         db.commit()
         db.refresh(balance_instance)
     else:
+        print("successful created new one")
         new_balance_instance = models.Balance(user_id=user_id, instrument_id=instrument_id, amount=amount)
         db.add(new_balance_instance)
         db.commit()
@@ -20,7 +23,10 @@ def deposit_balance(db:Session, user_id:str, instrument_id:str, amount:float):
 
 def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     balance_instance = db.query(models.Balance).filter(and_(models.Balance.user_id == user_id, models.Balance.instrument_id == instrument_id)).first()
+    print(f"trying to withdraw - {balance_instance}")
+    print(f"user_id = {user_id}, instrument_id - {instrument_id}")
     if not balance_instance is None:
+        print("successful")
         balance_instance.amount -= amount
 
         if balance_instance.amount == 0:
@@ -34,6 +40,7 @@ def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
         return {
             'success': True
         }
+    print("error")
     raise HTTPException(status_code=400, detail='Невозможно снять того, чего нету!')
 
 
