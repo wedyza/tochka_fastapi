@@ -61,6 +61,7 @@ def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = D
 
     rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
     if order.direction == models.DirectionsOrders.BUY:
+        print(f"id: {order.id}, price:{order.price}, quantity:{order.quantity}, filled_quantity: {order.filled_quantity}")
         unlock_custom_balance(db, order.user_id, (order.quantity - order.filled_quantity)*order.price, rub_instrument.id)
     else:
         unlock_custom_balance(db, order.user_id, order.quantity - order.filled_quantity, order.instrument_id)
@@ -136,6 +137,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
 
             need_quantity -= another_order.quantity
             stocked_orders.append(another_order)
+            print(f"finding bad order: id:{another_order.id}, price:{another_order.price}, quantity:{another_order.quantity}")
             final_price = another_order.quantity * another_order.price
             if payload.direction == models.DirectionsOrders.BUY and final_price > user_rub_balance:
                 # raise HTTPException(status_code=400, detail='На счету пользователя недостаточно денег для закрытия заказа')
