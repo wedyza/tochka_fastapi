@@ -130,11 +130,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         for another_order in orders:
             local_need_quantity = another_order.quantity - another_order.filled_quantity
             if order.filled_quantity + local_need_quantity > order.quantity:
-                order_count = order.quantity - order.filled_quantity
-                another_order.filled_quantity += order_count
-                order.filled_quantity += order_count
-
-                db.commit()
+                stocked_orders.append(another_order)
                 break
 
             need_quantity -= another_order.quantity
