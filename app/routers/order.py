@@ -135,7 +135,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
 
             need_quantity -= another_order.quantity
             stocked_orders.append(another_order)
-            print(f"finding bad order: id:{another_order.id}, price:{another_order.price}, quantity:{another_order.quantity}")
+            # print(f"finding bad order: id:{another_order.id}, price:{another_order.price}, quantity:{another_order.quantity}")
             final_price = another_order.quantity * another_order.price
             if payload.direction == models.DirectionsOrders.BUY and final_price > user_rub_balance:
                 # raise HTTPException(status_code=400, detail='На счету пользователя недостаточно денег для закрытия заказа')

@@ -147,10 +147,10 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
     withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
 
-    print(f"quantity - {buy_order.quantity}")
-    print(f"filled_quantity - {buy_order.filled_quantity}")
+    # print(f"quantity - {buy_order.quantity}")
+    # print(f"filled_quantity - {buy_order.filled_quantity}")
 
-    print(f"just an sell order - {sell_order.quantity}, {sell_order.filled_quantity}")
+    # print(f"just an sell order - {sell_order.quantity}, {sell_order.filled_quantity}")
     if buy_order.filled_quantity == buy_order.quantity:
         buy_order.status = models.StatusOrders.EXECUTED
         buy_order.filled = True
