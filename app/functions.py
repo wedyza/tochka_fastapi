@@ -46,6 +46,8 @@ def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: st
     balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
     if balance is not None:
         balance.locked -= amount
+    else:
+        print('balance not found')
     db.commit()
     db.refresh(balance)
 
@@ -58,8 +60,11 @@ def lock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str)
         raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
 
     balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
+
     if balance is not None:
         balance.locked += amount
+    else:
+        print('balance not found')
     
     db.commit()
     db.refresh(balance)
