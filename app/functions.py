@@ -6,7 +6,8 @@ from sqlalchemy import and_
 
 def deposit_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     balance_instance = db.query(models.Balance).filter(and_(models.Balance.user_id == user_id, models.Balance.instrument_id == instrument_id)).first()
-    if balance_instance:
+    print(f"trying to deposit - {balance_instance}")
+    if not balance_instance is None:
         balance_instance.amount += amount
         db.commit()
         db.refresh(balance_instance)
@@ -19,7 +20,7 @@ def deposit_balance(db:Session, user_id:str, instrument_id:str, amount:float):
 
 def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     balance_instance = db.query(models.Balance).filter(and_(models.Balance.user_id == user_id, models.Balance.instrument_id == instrument_id)).first()
-    if balance_instance:
+    if not balance_instance is None:
         balance_instance.amount -= amount
 
         if balance_instance.amount == 0:
