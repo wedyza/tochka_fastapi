@@ -81,7 +81,8 @@ def check_custom_balance(db:Session, user_id:str, ticker: str):
             if balance.instrument_id == custom_instrument.id:
                 return balance.amount - balance.locked
         return 0
-    except:
+    except Excepiton as e:
+        print(e)
         return 0
 
 
