@@ -70,7 +70,7 @@ def lock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str)
 
 
 def check_custom_balance(db:Session, user_id:str, ticker: str):
-    custom_instrument = db.query(models.Instrument).filter(models.Instrument.ticker==ticker).first()
+    custom_instrument = db.query(models.Instrument).filter(models.Instrument.ticker==ticker).filter(models.Instrument.deleted_at == None).first()
 
     if not custom_instrument:
         raise HTTPException(status_code=404, detail='В системе отсутствуют данный инструмент!')
@@ -81,8 +81,7 @@ def check_custom_balance(db:Session, user_id:str, ticker: str):
             if balance.instrument_id == custom_instrument.id:
                 return balance.amount - balance.locked
         return 0
-    except Excepiton as e:
-        print(e)
+    except:
         return 0
 
 
