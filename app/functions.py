@@ -43,12 +43,9 @@ def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: st
     if not rub_instrument:
         raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
 
-    user = db.query(models.User).filter(models.User.id==user_id).filter(models.User.deleted_at == None).first()
-    for balance in user.balance:
-        if balance.instrument_id == rub_instrument.id:
-            balance.locked -= amount
-            break
-    
+    balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
+    if balance is not None:
+        balance.locked -= amount
     db.commit()
     db.refresh(balance)
 
@@ -60,11 +57,9 @@ def lock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str)
     if not rub_instrument:
         raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
 
-    user = db.query(models.User).filter(models.User.id==user_id).first()
-    for balance in user.balance:
-        if balance.instrument_id == rub_instrument.id:
-            balance.locked = amount
-            break
+    balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
+    if balance is not None:
+        balance.locked += amount
     
     db.commit()
     db.refresh(balance)
@@ -130,18 +125,18 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     else:
         final_price = sell_order.price * final_quantity
     
-    withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
-    deposit_balance(db, seller.id, buy_instrument.id, final_price)
     if not buy_order.price is None:
         unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
+    withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
+    deposit_balance(db, seller.id, buy_instrument.id, final_price)
 
     buy_order.filled_quantity += final_quantity
     sell_order.filled_quantity += final_quantity
 
-    deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
-    withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
     if not sell_order.price is None:
         unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
+    deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
+    withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
 
     if buy_order.filled_quantity == buy_order.quantity:
         buy_order.status = models.StatusOrders.EXECUTED
