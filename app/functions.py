@@ -124,6 +124,8 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     buy_quantity = buy_order.quantity - buy_order.filled_quantity
     sell_quantity = sell_order.quantity - sell_order.filled_quantity
 
+    print(f"buy quantity {buy_quantity}")
+    print(f"sell quantity {sell_quantity}")
     if buy_quantity > sell_quantity:
         final_quantity = sell_quantity
         sell_order.filled = True
@@ -134,11 +136,16 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
         buy_order.filled = True
         sell_order.filled = True
         final_quantity = buy_quantity  
+    print(f"final quantity {final_quantity}")
     
     buy_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
+
+    print(f"buy_order_price {buy_order.price}")
+    print(f"sell order price {sell_order.price}")    
     final_price = sell_order.price * final_quantity
     if sell_order.price is None:
         final_price = buy_order.price * final_quantity
+    
     withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
     deposit_balance(db, seller.id, buy_instrument.id, final_price)
     unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
