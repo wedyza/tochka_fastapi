@@ -22,7 +22,8 @@ def fill_list(order:models.Order, ticker:str):
             "direction": order.direction,
             'qty': order. quantity,
             'ticker': ticker
-        }
+        },
+        "status": order.status
     }
     if not order.price is None:
         data['body']['price'] = order.price
@@ -59,7 +60,7 @@ def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = D
     
     order.deleted_at = text('now()')
     order.status = models.StatusOrders.CANCELLED
-    
+
     rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
     if order.direction == models.DirectionsOrders.BUY:
         print(f"id: {order.id}, price:{order.price}, quantity:{order.quantity}, filled_quantity: {order.filled_quantity}")
