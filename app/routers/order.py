@@ -58,6 +58,8 @@ def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = D
     if order is None:
         raise HTTPException(detail='Не найдено активного заказа с таким ID', status_code=status.HTTP_404_NOT_FOUND)
     
+    print(f'price - {order.price} ')
+
     order.deleted_at = text('now()')
     order.status = models.StatusOrders.CANCELLED
 
@@ -120,11 +122,11 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         if payload.direction == models.DirectionsOrders.BUY:
             orders = db.query(models.Order).filter(and_(
                 models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False, models.Order.instrument_id == instrument.id
-            )).order_by(models.Order.price.asc()).all()
+            )).order_by(models.Order.price.asc(), models.Order.created_at.desc()).all()
         else:
             orders = db.query(models.Order).filter(and_(
                 models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False, models.Order.instrument_id == instrument.id
-            )).order_by(models.Order.price.desc()).all()
+            )).order_by(models.Order.price.desc(), models.Order.created_at.desc()).all()
 
         stocked_orders = list()
         for another_order in orders:

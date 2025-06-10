@@ -40,8 +40,10 @@ def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
 def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str):
     rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.id==instrument_id, models.Instrument.deleted_at == None)).first()
     
-    if not rub_instrument:
-        raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
+    if rub_instrument is None:
+        print(rub_instrument)
+        print(instrument_id)
+        raise HTTPException(status_code=402, detail='В системе отсутствует нужная валюта!')
 
     balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
     if balance is not None:
@@ -64,8 +66,10 @@ def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: st
 def lock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str):
     rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.id==instrument_id, models.Instrument.deleted_at == None)).first()
     
-    if not rub_instrument:
-        raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
+    if rub_instrument is None:
+        print(rub_instrument)
+        print(instrument_id)
+        raise HTTPException(status_code=403, detail='В системе отсутствует нужная валюта!')
 
     balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
 
@@ -81,7 +85,9 @@ def lock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str)
 def check_custom_balance(db:Session, user_id:str, ticker: str):
     custom_instrument = db.query(models.Instrument).filter(models.Instrument.ticker==ticker).filter(models.Instrument.deleted_at == None).first()
 
-    if not custom_instrument:
+    if custom_instrument is None:
+        print(custom_instrument)
+        print(ticker)
         raise HTTPException(status_code=404, detail='В системе отсутствуют данный инструмент!')
     
     balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == custom_instrument.id).first()
