@@ -108,9 +108,9 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
     else:
         need_quantity = payload.qty
         final_price = 0
-        opposite_order_direction = models.DirectionsOrders.BUY if payload.direction == models.DirectionsOrders.SELL else payload.direction
+        opposite_order_direction = models.DirectionsOrders.BUY if payload.direction == models.DirectionsOrders.SELL else models.DirectionsOrders.SELL
         print(opposite_order_direction)
-        currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None, models.Order.instrument_id == instrument.id)).first()
+        currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None, models.Order.instrument_id == instrument.id)).first()[0]
         print(currency_orders_quantity)
         if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
             # raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
