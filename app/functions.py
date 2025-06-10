@@ -116,32 +116,13 @@ def order_processing(db:Session, order:models.Order):
 
 
 def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
-    buyer_query = db.query(models.User).filter(models.User.id==buy_order.user_id)
-    seller_query = db.query(models.User).filter(models.User.id==sell_order.user_id)
-
-    buyer = buyer_query.first()
-    seller = seller_query.first()
+    buyer = db.query(models.User).filter(models.User.id==buy_order.user_id).first()
+    seller = db.query(models.User).filter(models.User.id==sell_order.user_id).first()
 
     buy_quantity = buy_order.quantity - buy_order.filled_quantity
     sell_quantity = sell_order.quantity - sell_order.filled_quantity
 
-    if buy_quantity > sell_quantity:
-        final_quantity = sell_quantity
-        sell_order.filled = True
-        sell_order.status = models.StatusOrders.EXECUTED
-        buy_order.status = models.StatusOrders.PARTIALLY_EXECUTED
-    elif buy_quantity < sell_quantity:
-        final_quantity = buy_quantity
-        buy_order.filled = True
-        buy_order.status = models.StatusOrders.EXECUTED
-        sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
-    else:
-        buy_order.filled = True
-        sell_order.filled = True
-        final_quantity = buy_quantity  
-        buy_order.status = models.StatusOrders.EXECUTED
-        sell_order.status = models.StatusOrders.EXECUTED
-    
+    final_quantity = buy_quantity if buy_quantity <= sell_quantity else sell_quantity
     buy_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
 
     if sell_order.price is None:
@@ -161,6 +142,19 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
     if not sell_order.price is None:
         unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
+
+    if buy_order.filled_quantity == buy_order.quantity:
+        buy_order.status = models.StatusOrders.EXECUTED
+        buy_order.filled = True
+    else:
+        buy_order.status = models.StatusOrders.PARTIALLY_EXECUTED
+    
+    if sell_order.filled_quantity == sell_order.quantity:
+        sell_order.status = models.StatusOrders.EXECUTED
+        sell_order.filled = True
+    else:
+        sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
+
 
     db.commit()
     db.refresh(buy_order)
