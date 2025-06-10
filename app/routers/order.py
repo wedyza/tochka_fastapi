@@ -13,18 +13,20 @@ router = APIRouter()
 
 
 def fill_list(order:models.Order, ticker:str):
-    return {
+    data = {
         "id": order.id,
         "user_id": order.user_id,
         "timestamp": order.created_at,
         "filled": order.filled,
         "body": {
             "direction": order.direction,
-            "price": order.price,
             'qty': order. quantity,
             'ticker': ticker
         }
     }
+    if not order.price is None:
+        data['body']['price'] = order.price
+    return data
 
 @router.get('')
 def list_orders(db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->List[schemas.OrdersResponse]:

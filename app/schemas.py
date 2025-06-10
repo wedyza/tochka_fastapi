@@ -121,7 +121,7 @@ class OrderBody(BaseModel):
     direction: DirectionsOrders
     ticker: str 
     qty: int 
-    price: float
+    price: Optional[float]
 
 class OrdersResponse(BaseModel):
     id: uuid.UUID

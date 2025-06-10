@@ -46,8 +46,8 @@ async def get_orderbook(ticker:str, limit = 10, db: Session = Depends(get_db))->
         return Response('Not found', status_code=404)
     base_orders = db.query(models.Order).filter(models.Order.deleted_at == None).filter(models.Order.instrument_id == ticker_entity.id).filter(models.Order.filled == False).filter(models.Order.price != None)
     return {
-        "bid_levels": base_orders.filter(models.Order.direction == models.DirectionsOrders.BUY).all(),
-        "ask_levels": base_orders.filter(models.Order.direction == models.DirectionsOrders.SELL).all()
+        "bid_levels": base_orders.filter(models.Order.direction == models.DirectionsOrders.BUY).limit(limit).all(),
+        "ask_levels": base_orders.filter(models.Order.direction == models.DirectionsOrders.SELL).limit(limit).all()
     }
 
 

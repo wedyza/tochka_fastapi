@@ -6,15 +6,11 @@ from sqlalchemy import and_
 
 def deposit_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     balance_instance = db.query(models.Balance).filter(and_(models.Balance.user_id == user_id, models.Balance.instrument_id == instrument_id)).first()
-    # print(f"trying to deposit - {balance_instance}")
-    # print(f"user_id = {user_id}, instrument_id - {instrument_id}")
     if not balance_instance is None:
-        # print("successful += ")
         balance_instance.amount += amount
         db.commit()
         db.refresh(balance_instance)
     else:
-        # print("successful created new one")
         new_balance_instance = models.Balance(user_id=user_id, instrument_id=instrument_id, amount=amount)
         db.add(new_balance_instance)
         db.commit()
@@ -23,10 +19,7 @@ def deposit_balance(db:Session, user_id:str, instrument_id:str, amount:float):
 
 def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     balance_instance = db.query(models.Balance).filter(and_(models.Balance.user_id == user_id, models.Balance.instrument_id == instrument_id)).first()
-    # print(f"trying to withdraw - {balance_instance}")
-    # print(f"user_id = {user_id}, instrument_id - {instrument_id}")
     if not balance_instance is None:
-        # print("successful")
         balance_instance.amount -= amount
 
         if balance_instance.amount == 0:
@@ -50,7 +43,7 @@ def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: st
     if not rub_instrument:
         raise HTTPException(status_code=404, detail='В системе отсутствует нужная валюта!')
 
-    user = db.query(models.User).filter(models.User.id==user_id).first()
+    user = db.query(models.User).filter(models.User.id==user_id).filter(models.User.deleted_at == None).first()
     for balance in user.balance:
         if balance.instrument_id == rub_instrument.id:
             balance.locked -= amount
@@ -152,14 +145,16 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     
     withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
     deposit_balance(db, seller.id, buy_instrument.id, final_price)
-    unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
+    if not buy_order.price is None:
+        unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
 
     buy_order.filled_quantity += final_quantity
     sell_order.filled_quantity += final_quantity
 
     deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
     withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
-    unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
+    if not sell_order.price is None:
+        unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
 
     db.commit()
     db.refresh(buy_order)
