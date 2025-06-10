@@ -117,6 +117,13 @@ class OrderbookResponse(BaseModel):
     bid_levels: Optional[List[OrderInOrderbook]] = [] 
     ask_levels: Optional[List[OrderInOrderbook]] = []
 
+
+class OrderBodyWithoutPrice(BaseModel):
+    direction: DirectionsOrders
+    ticker: str 
+    qty: int 
+    
+
 class OrderBody(BaseModel):
     direction: DirectionsOrders
     ticker: str 
@@ -127,5 +134,5 @@ class OrdersResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     timestamp: datetime 
-    body: OrderBody
+    body: OrderBody | OrderBodyWithoutPrice
     filled: bool
