@@ -94,12 +94,12 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         
         if payload.direction == models.DirectionsOrders.BUY:
             user_rub_balance = check_custom_balance(db, user_id, 'RUB')
-            if user_rub_balance < user_must_pay:
+            if user_rub_balance <= user_must_pay:
                 # raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
                 return Response('first one' ,status_code=421)
         else:
             user_custom_balance = check_custom_balance(db, user_id, instrument.ticker)
-            if user_custom_balance < order.quantity:
+            if user_custom_balance <= order.quantity:
                 # raise HTTPException(status_code=400, detail='На счету пользователя не хватает выбранной валюты')
                 return Response('secnd one' ,status_code=422)
         order_processing(db, order)
