@@ -76,14 +76,10 @@ def check_custom_balance(db:Session, user_id:str, ticker: str):
     if not custom_instrument:
         raise HTTPException(status_code=404, detail='В системе отсутствуют данный инструмент!')
     
-    user = db.query(models.User).filter(models.User.id==user_id).first()
-    try:
-        for balance in user.balance:
-            if balance.instrument_id == custom_instrument.id:
-                return balance.amount - balance.locked
+    balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == custom_instrument.id).first()
+    if balance is None:
         return 0
-    except:
-        return 0
+    return balance.amount - balance.locked
 
 
 def order_processing(db:Session, order:models.Order):
