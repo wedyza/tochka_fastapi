@@ -114,8 +114,8 @@ class OrderInOrderbook(BaseModel):
 
 
 class OrderbookResponse(BaseModel):
-    bid_levels: List[OrderInOrderbook]
-    ask_levels: List[OrderInOrderbook]
+    bid_levels: Optional[List[OrderInOrderbook]] = [] 
+    ask_levels: Optional[List[OrderInOrderbook]] = []
 
 class OrderBody(BaseModel):
     direction: DirectionsOrders

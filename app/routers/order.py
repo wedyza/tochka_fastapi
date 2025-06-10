@@ -86,6 +86,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
     order.quantity = payload.qty
     order.filled_quantity = 0
 
+    user_rub_balance = check_custom_balance(db, user_id, 'RUB')
     if payload.price != 0:
         # user = db.query(models.User).filter(models.User.id==user_id).first()
         user_must_pay = payload.qty * payload.price
@@ -93,7 +94,6 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         order.price = payload.price
         
         if payload.direction == models.DirectionsOrders.BUY:
-            user_rub_balance = check_custom_balance(db, user_id, 'RUB')
             if user_rub_balance <= user_must_pay:
                 # raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
                 return Response('first one' ,status_code=421)
