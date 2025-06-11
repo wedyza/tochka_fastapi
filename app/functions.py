@@ -242,7 +242,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     else:
         final_price = sell_order.price * final_quantity
 
-    try:
         if not buy_order.price is None:
             unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
         withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
@@ -265,17 +264,22 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
         else:
             sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
 
+        if buy_order.filled > buy_order.quantity or sell_order.filled > sell_order.quantity:
+            print("failed on filled > quantity")
+            print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} => buy quantity")
+            print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} => sell quantity")
+
         db.commit()
         db.refresh(buy_order)
         db.refresh(sell_order)
-    except Exception as e:
-        try:
-            print("buyer balance:")
-            for b in buyer.balance:
-                print(f"{b.instrument_id} - {b.amount}")
-        except:
-            print('Ничего нет')
-        finally:
-            print(f"buyer_id - {buyer.id}")
-            print(f"seller_id - {seller.id}")
-            raise e
+    # except Exception as e:
+    #     try:
+    #         print("buyer balance:")
+    #         for b in buyer.balance:
+    #             print(f"{b.instrument_id} - {b.amount}")
+    #     except:
+    #         print('Ничего нет')
+    #     finally:
+    #         print(f"buyer_id - {buyer.id}")
+    #         print(f"seller_id - {seller.id}")
+    #         raise e
