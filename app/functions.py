@@ -229,7 +229,7 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     
     final_quantity = buy_quantity if buy_quantity <= sell_quantity else sell_quantity
     
-    if buy_order.filled + final_quantity > buy_order.quantity or sell_order.filled + final_quantity > sell_order.quantity:
+    if buy_order.filled + final_quantity > buy_order.quantity or sell_order.filled + final_quantity > sell_order.quantity or final_quantity < 0:
         print("failed on filled > quantity")
         print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} => buy quantity")
         print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} => sell quantity")
