@@ -198,7 +198,7 @@ def create_order(
             )
             .first()[0]
         )
-        print(currency_orders_quantity)
+        print(f"we have - {currency_orders_quantity}, user need - {need_quantity}")
         if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
             # raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
             return Response("thied one", status_code=423)
@@ -235,23 +235,25 @@ def create_order(
             )
 
         stocked_orders = list()
+        order_local_filled = 0
         for another_order in orders:
             local_need_quantity = another_order.quantity - another_order.filled
-            if order.filled + local_need_quantity > order.quantity:
+            if order_local_filled + local_need_quantity > order.quantity:
+                if payload.direction == models.DirectionsOrders.BUY and (final_price + local_need_quantity * another_order.price) > user_rub_balance:
+                    return Response("fourth one", status_code=424)
                 stocked_orders.append(another_order)
                 break
 
-            need_quantity -= another_order.quantity
+            final_price += local_need_quantity * another_order.price
             stocked_orders.append(another_order)
-            final_price = another_order.quantity * another_order.price
             if (
                 payload.direction == models.DirectionsOrders.BUY
                 and final_price > user_rub_balance
             ):
                 # raise HTTPException(status_code=400, detail='На счету пользователя недостаточно денег для закрытия заказа')
                 return Response("fourth one", status_code=424)
-
-            if order.filled + local_need_quantity == order.quantity:
+            order_local_filled += local_need_quantity
+            if order_local_filled == order.quantity:
                 break
 
         db.add(order)
