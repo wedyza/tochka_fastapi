@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 import uuid
-from pydantic import BaseModel, EmailStr, constr, field_validator, Field, computed_field
+from pydantic import BaseModel, ConfigDict, EmailStr, constr, field_validator, Field, computed_field
 import re
 from typing import Dict, Optional
 import pydantic
@@ -112,8 +112,8 @@ class OrderInOrderbook(BaseModel):
     price: int
     quantity: int
     filled_quantity: int
+    config = ConfigDict(from_attributes=True)
 
-    @property
     @computed_field
     def qty(self):
         return self.quantity - self.filled_quantity
