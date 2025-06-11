@@ -105,7 +105,6 @@ def delete_order(
 
     order.deleted_at = text("now()")
     order.status = models.StatusOrders.CANCELLED
-    order.filled = True
 
     rub_instrument = (
         db.query(models.Instrument)

@@ -26,10 +26,6 @@ class Base(Base_var):
     created_at = Column(
         TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
     )
-    # updated_at = Column(TIMESTAMP(timezone=True),
-
-
-#                     nullable=False, server_default=text("now()"))
 
 
 class Base_del:

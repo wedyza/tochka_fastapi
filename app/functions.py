@@ -195,6 +195,7 @@ def order_processing(db: Session, order: models.Order):
                 )
             )
             .filter(models.Order.price >= order.price)
+            .filter(models.Order.instrument_id == order.instrument_id)
             .all()
         )
     else:
@@ -210,12 +211,13 @@ def order_processing(db: Session, order: models.Order):
                 )
             )
             .filter(models.Order.price <= order.price)
+            .filter(models.Order.instrument_id == order.instrument_id)
             .all()
         )
 
     for another_order in opposite_orders:
         order = db.query(models.Order).filter(models.Order.id == order.id).first()
-        if order.status == models.StatusOrders.EXECUTED:
+        if order.status == models.StatusOrders.EXECUTED or order.status == models.StatusOrders.CANCELLED:
             return
         if order.direction == models.DirectionsOrders.BUY:
             making_a_deal(order, another_order, db)
@@ -283,10 +285,11 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
         db.refresh(sell_order)
     except Exception as e:
         try:
+            print("seller balance:")
             for b in seller.balance:
                 print(f"{b.instrument_id} - {b.amount}")
         except:
             print('Ничего нет')
         finally:
-            print(seller.id)
+            print(f"seller_id - {seller.id}")
             raise e
