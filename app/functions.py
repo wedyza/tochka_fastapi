@@ -255,6 +255,12 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
     deposit_balance(db, seller.id, buy_instrument.id, final_price)
 
+    if buy_order.filled + final_quantity > buy_order.quantity or sell_order.filled + final_quantity > sell_order.quantity:
+        print("failed on filled > quantity | END")
+        print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} => buy quantity")
+        print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} => sell quantity")
+        print(f"final quantity - {final_quantity}")
+
     buy_order.filled += final_quantity
     sell_order.filled += final_quantity
 
@@ -263,11 +269,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
     withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
 
-    if buy_order.filled + final_quantity > buy_order.quantity or sell_order.filled + final_quantity > sell_order.quantity:
-        print("failed on filled > quantity | END")
-        print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} => buy quantity")
-        print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} => sell quantity")
-        print(f"final quantity - {final_quantity}")
 
     if buy_order.filled == buy_order.quantity:
         buy_order.status = models.StatusOrders.EXECUTED
