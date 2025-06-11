@@ -191,7 +191,8 @@ def order_processing(db: Session, order: models.Order):
             .filter(
                 and_(
                     models.Order.direction == models.DirectionsOrders.BUY,
-                    models.Order.status == models.StatusOrders.EXECUTED,
+                    models.Order.status != models.StatusOrders.EXECUTED,
+                    models.Order.status != models.StatusOrders.CANCELLED,
                 )
             )
             .filter(models.Order.price >= order.price)
@@ -207,7 +208,8 @@ def order_processing(db: Session, order: models.Order):
             .filter(
                 and_(
                     models.Order.direction == models.DirectionsOrders.SELL,
-                    models.Order.status == models.StatusOrders.EXECUTED,
+                    models.Order.status != models.StatusOrders.EXECUTED,
+                    models.Order.status != models.StatusOrders.CANCELLED,
                 )
             )
             .filter(models.Order.price <= order.price)
