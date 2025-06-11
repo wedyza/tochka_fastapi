@@ -112,7 +112,6 @@ class OrderInOrderbook(BaseModel):
     price: int
     quantity: int
     filled_quantity: int
-    config = ConfigDict(from_attributes=True)
 
     @computed_field
     def qty(self):
