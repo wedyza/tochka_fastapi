@@ -59,9 +59,6 @@ def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: floa
         .filter(models.Instrument.id == instrument_id)
         .first()
     )
-    print(instrument_id)
-    print(instrument.deleted_at)
-    print(instrument)
     raise HTTPException(status_code=411, detail="Невозможно снять того, чего нету!")
 
 
@@ -78,8 +75,6 @@ def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id:
     )
 
     if rub_instrument is None:
-        print(rub_instrument)
-        print(instrument_id)
         raise HTTPException(
             status_code=412, detail="В системе отсутствует нужная валюта!"
         )
@@ -121,8 +116,6 @@ def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: s
     )
 
     if rub_instrument is None:
-        print(rub_instrument)
-        print(instrument_id)
         raise HTTPException(
             status_code=413, detail="В системе отсутствует нужная валюта!"
         )
@@ -151,10 +144,6 @@ def check_custom_balance(db: Session, user_id: str, ticker: str):
     )
 
     if custom_instrument is None:
-        print(
-            custom_instrument
-        )  # начни завтра с отлова того, что иногда баланс/инструменты не могут найти друг друга
-        print(ticker)
         raise HTTPException(
             status_code=404, detail="В системе отсутствуют данный инструмент!"
         )
@@ -250,10 +239,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     else:
         final_price = sell_order.price * final_quantity
 
-
-    # print(seller.id)
-    # for b in seller.balance:
-    #     print(f"{b.instrument_id} - {b.amount}")
     try:
         if not buy_order.price is None:
             unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
@@ -267,11 +252,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
             unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
         deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
         withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
-
-        # print(f"quantity - {buy_order.quantity}")
-        # print(f"filled - {buy_order.filled}")
-
-        # print(f"just an sell order - {sell_order.quantity}, {sell_order.filled}")
         if buy_order.filled == buy_order.quantity:
             buy_order.status = models.StatusOrders.EXECUTED
         else:

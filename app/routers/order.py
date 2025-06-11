@@ -115,9 +115,6 @@ def delete_order(
         )
         .first()
     )
-    print(
-        f"id: {order.id}, price:{order.price}, quantity:{order.quantity}, filled: {order.filled}"
-    )
     if order.direction == models.DirectionsOrders.BUY:
         unlock_custom_balance(
             db,
@@ -156,7 +153,6 @@ def create_order(
         raise HTTPException(
             status_code=404, detail="Не найдено валюты с таким тикером!"
         )
-    print(f"payload - {payload}, instrument - {instrument.id}")
 
     order = models.Order()
     order.direction = payload.direction
@@ -246,7 +242,6 @@ def create_order(
 
             need_quantity -= another_order.quantity
             stocked_orders.append(another_order)
-            # print(f"finding bad order: id:{another_order.id}, price:{another_order.price}, quantity:{another_order.quantity}")
             final_price = another_order.quantity * another_order.price
             if (
                 payload.direction == models.DirectionsOrders.BUY
