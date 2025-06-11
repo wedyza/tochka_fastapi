@@ -60,6 +60,7 @@ def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = D
 
     order.deleted_at = text('now()')
     order.status = models.StatusOrders.CANCELLED
+    order.filled = True
 
     rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
     print(f"id: {order.id}, price:{order.price}, quantity:{order.quantity}, filled_quantity: {order.filled_quantity}")
@@ -81,7 +82,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
         and_(models.Instrument.deleted_at == None, models.Instrument.ticker == payload.ticker)
     ).first()
 
-    if not instrument:
+    if instrument is None:
         raise HTTPException(status_code=404, detail='Не найдено валюты с таким тикером!')
     
     order = models.Order()

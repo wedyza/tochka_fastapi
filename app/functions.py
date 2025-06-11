@@ -34,7 +34,7 @@ def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
             'success': True
         }
     # print("error")
-    raise HTTPException(status_code=400, detail='Невозможно снять того, чего нету!')
+    raise HTTPException(status_code=401, detail='Невозможно снять того, чего нету!')
 
 
 def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str):

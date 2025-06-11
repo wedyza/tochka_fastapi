@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 import uuid
-from pydantic import BaseModel, EmailStr, constr, field_validator, Field, validator
+from pydantic import BaseModel, EmailStr, constr, field_validator, Field, computed_field
 import re
 from typing import Dict, Optional
 import pydantic
@@ -110,7 +110,16 @@ class OrderCreateOutput(BaseModel):
 
 class OrderInOrderbook(BaseModel):
     price: int
-    quantity: int = Field(serialization_alias="qty")
+    quantity: int
+    filled_quantity: int
+
+    @property
+    @computed_field
+    def qty(self):
+        return self.quantity - self.filled_quantity
+    
+    class Config:
+        fields = {'quantity': {'exclude': True}, 'filled_quantity': {'exclude': True}}
 
 
 class OrderbookResponse(BaseModel):

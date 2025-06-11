@@ -17,6 +17,11 @@ def delete_user(user_id: UUID, db: Session = Depends(get_db), admin_id: str = De
     user.deleted_at = text('now()')
     db.commit()
     db.refresh(user)
+
+    db.query(models.Balance).filter(models.Balance.user_id == user_id).delete()
+    db.query(models.Order).filter(models.Order.user_id == user_id).update(
+        {models.Order.deleted_at: text('now()')}
+    )
     return {
         'success': True
     }
