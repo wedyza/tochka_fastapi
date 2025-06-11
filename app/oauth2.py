@@ -28,6 +28,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # def get_config():
 #     return Settings()
 
+
 def create_access_token(data):
     encoded_jwt = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -40,64 +41,91 @@ class NotVerified(Exception):
 class UserNotFound(Exception):
     pass
 
+
 class UserNotAdmin(Exception):
     pass
 
-def require_user(db: Session = Depends(get_db), Authorization: str = Header()): #authorization es che
+
+def require_user(
+    db: Session = Depends(get_db), Authorization: str = Header()
+):  # authorization es che
     try:
-        token = Authorization.split(' ')[1]
+        token = Authorization.split(" ")[1]
         user_id = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = uuid.UUID(user_id['user_id'])
-        user = db.query(models.User).filter(models.User.id == user_id).filter(models.User.deleted_at == None).first()
-        
+        user_id = uuid.UUID(user_id["user_id"])
+        user = (
+            db.query(models.User)
+            .filter(models.User.id == user_id)
+            .filter(models.User.deleted_at == None)
+            .first()
+        )
+
         if not user:
-            raise UserNotFound('User no longer exist')
+            raise UserNotFound("User no longer exist")
 
     except Exception as e:
         error = e.__class__.__name__
-        if error == 'MissingTokenError':
+        if error == "MissingTokenError":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='You are not logged in')
-        if error == 'UserNotFound':
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not logged in"
+            )
+        if error == "UserNotFound":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='User no longer exist')
-        if error == 'NotVerified':
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="User no longer exist"
+            )
+        if error == "NotVerified":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='Please verify your account')
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Please verify your account",
+            )
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail='Token is invalid or has expired')
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token is invalid or has expired",
+        )
     return user_id
 
 
 def require_admin(db: Session = Depends(get_db), Authorization: str = Header()):
     try:
-        token = Authorization.split(' ')[1]
+        token = Authorization.split(" ")[1]
         user_id = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = uuid.UUID(user_id['user_id'])
-        user = db.query(models.User).filter(models.User.id == user_id).filter(models.User.deleted_at == None).first()
+        user_id = uuid.UUID(user_id["user_id"])
+        user = (
+            db.query(models.User)
+            .filter(models.User.id == user_id)
+            .filter(models.User.deleted_at == None)
+            .first()
+        )
 
         if not user:
-            raise UserNotFound('User no longer exist')
-        
+            raise UserNotFound("User no longer exist")
+
         if user.role != models.UserRole.ADMIN:
-            raise UserNotAdmin('User is not admin')
+            raise UserNotAdmin("User is not admin")
 
     except Exception as e:
         error = e.__class__.__name__
         print(traceback.format_exc())
-        if error == 'MissingTokenError':
+        if error == "MissingTokenError":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='You are not logged in')
-        if error == 'UserNotFound':
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not logged in"
+            )
+        if error == "UserNotFound":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='User no longer exist')
-        if error == 'NotVerified':
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="User no longer exist"
+            )
+        if error == "NotVerified":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='Please verify your account')
-        if error == 'UserNotAdmin':
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Please verify your account",
+            )
+        if error == "UserNotAdmin":
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail='You are not allowed to do this'
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not allowed to do this",
             )
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail='Token is invalid or has expired')
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token is invalid or has expired",
+        )
     return user_id

@@ -1,136 +1,247 @@
-#type: ignore
+# type: ignore
 
 from fastapi import APIRouter, Response, HTTPException, Depends, status
 from ..database import get_db
 from sqlalchemy.orm import Session
 from .. import models, schemas, oauth2
 from sqlalchemy import and_, func, text
-from ..functions import check_custom_balance, making_a_deal, order_processing, unlock_custom_balance
+from ..functions import (
+    check_custom_balance,
+    making_a_deal,
+    order_processing,
+    unlock_custom_balance,
+)
 from typing import List
 from uuid import UUID
 
 router = APIRouter()
 
 
-def fill_list(order:models.Order, ticker:str):
+def fill_list(order: models.Order, ticker: str):
     data = {
         "id": order.id,
         "user_id": order.user_id,
         "timestamp": order.created_at,
         "filled": order.filled,
-        "body": {
-            "direction": order.direction,
-            'qty': order. quantity,
-            'ticker': ticker
-        },
-        "status": order.status
+        "body": {"direction": order.direction, "qty": order.quantity, "ticker": ticker},
+        "status": order.status,
     }
     if not order.price is None:
-        data['body']['price'] = order.price
+        data["body"]["price"] = order.price
     return data
 
-@router.get('')
-def list_orders(db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->List[schemas.OrdersResponse]:
-    orders = db.query(models.Order).filter(models.Order.deleted_at == None).filter(models.Order.user_id == user_id).all()
+
+@router.get("")
+def list_orders(
+    db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user)
+) -> List[schemas.OrdersResponse]:
+    orders = (
+        db.query(models.Order)
+        .filter(models.Order.deleted_at == None)
+        .filter(models.Order.user_id == user_id)
+        .all()
+    )
     answer = []
 
     for order in orders:
-        ticker = db.query(models.Instrument).filter(models.Instrument.id == order.instrument_id).first()
+        ticker = (
+            db.query(models.Instrument)
+            .filter(models.Instrument.id == order.instrument_id)
+            .first()
+        )
         answer.append(fill_list(order, ticker.ticker))
     return answer
 
 
-@router.get('/{order_id}')
-def get_order(order_id: str, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.OrdersResponse:
-    order = db.query(models.Order).filter(models.Order.deleted_at == None).filter(models.Order.id == order_id).first()
+@router.get("/{order_id}")
+def get_order(
+    order_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(oauth2.require_user),
+) -> schemas.OrdersResponse:
+    order = (
+        db.query(models.Order)
+        .filter(models.Order.deleted_at == None)
+        .filter(models.Order.id == order_id)
+        .first()
+    )
     if order is None:
-        raise HTTPException(detail='Не найдено активного заказа с таким ID', status_code=status.HTTP_404_NOT_FOUND)
-    ticker = db.query(models.Instrument).filter(models.Instrument.id == order.instrument_id).first()
+        raise HTTPException(
+            detail="Не найдено активного заказа с таким ID",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+    ticker = (
+        db.query(models.Instrument)
+        .filter(models.Instrument.id == order.instrument_id)
+        .first()
+    )
     return fill_list(order, ticker.ticker)
 
 
-@router.delete('/{order_id}')
-def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user))->schemas.DeleteResponse:
-    order = db.query(models.Order).filter(
-        and_(models.Order.deleted_at == None, models.Order.id == order_id, models.Order.filled == False)
-    ).first()
+@router.delete("/{order_id}")
+def delete_order(
+    order_id: UUID,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(oauth2.require_user),
+) -> schemas.DeleteResponse:
+    order = (
+        db.query(models.Order)
+        .filter(
+            and_(
+                models.Order.deleted_at == None,
+                models.Order.id == order_id,
+                models.Order.status != models.StatusOrders.EXECUTED,
+                models.Order.status != models.StatusOrders.CANCELLED,
+            )
+        )
+        .first()
+    )
 
     if order is None:
-        raise HTTPException(detail='Не найдено активного заказа с таким ID', status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(
+            detail="Не найдено активного заказа с таким ID",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
 
-    order.deleted_at = text('now()')
+    order.deleted_at = text("now()")
     order.status = models.StatusOrders.CANCELLED
     order.filled = True
 
-    rub_instrument = db.query(models.Instrument).filter(and_(models.Instrument.deleted_at == None, models.Instrument.ticker == 'RUB')).first()
-    print(f"id: {order.id}, price:{order.price}, quantity:{order.quantity}, filled_quantity: {order.filled_quantity}")
+    rub_instrument = (
+        db.query(models.Instrument)
+        .filter(
+            and_(
+                models.Instrument.deleted_at == None, models.Instrument.ticker == "RUB"
+            )
+        )
+        .first()
+    )
+    print(
+        f"id: {order.id}, price:{order.price}, quantity:{order.quantity}, filled: {order.filled}"
+    )
     if order.direction == models.DirectionsOrders.BUY:
-        unlock_custom_balance(db, order.user_id, (order.quantity - order.filled_quantity)*order.price, rub_instrument.id)
+        unlock_custom_balance(
+            db,
+            order.user_id,
+            (order.quantity - order.filled) * order.price,
+            rub_instrument.id,
+        )
     else:
-        unlock_custom_balance(db, order.user_id, order.quantity - order.filled_quantity, order.instrument_id)
+        unlock_custom_balance(
+            db, order.user_id, order.quantity - order.filled, order.instrument_id
+        )
 
     db.commit()
     db.refresh(order)
 
-    return {
-        'success': True
-    }
+    return {"success": True}
 
-@router.post('')
-def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user)):
-    instrument = db.query(models.Instrument).filter(
-        and_(models.Instrument.deleted_at == None, models.Instrument.ticker == payload.ticker)
-    ).first()
+
+@router.post("")
+def create_order(
+    payload: schemas.OrderCreateInput,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(oauth2.require_user),
+):
+    instrument = (
+        db.query(models.Instrument)
+        .filter(
+            and_(
+                models.Instrument.deleted_at == None,
+                models.Instrument.ticker == payload.ticker,
+            )
+        )
+        .first()
+    )
     if instrument is None:
-        raise HTTPException(status_code=404, detail='Не найдено валюты с таким тикером!')
+        raise HTTPException(
+            status_code=404, detail="Не найдено валюты с таким тикером!"
+        )
     print(f"payload - {payload}, instrument - {instrument.id}")
-    
+
     order = models.Order()
     order.direction = payload.direction
     order.user_id = user_id
     order.instrument_id = instrument.id
     order.quantity = payload.qty
-    order.filled_quantity = 0
+    order.filled = 0
 
-    user_rub_balance = check_custom_balance(db, user_id, 'RUB')
+    user_rub_balance = check_custom_balance(db, user_id, "RUB")
     if payload.price != 0:
-        # user = db.query(models.User).filter(models.User.id==user_id).first()
         user_must_pay = payload.qty * payload.price
 
         order.price = payload.price
-        
+
         if payload.direction == models.DirectionsOrders.BUY:
             if user_rub_balance < user_must_pay:
                 # raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
-                return Response('first one' ,status_code=421)
+                return Response("first one", status_code=421)
         else:
             user_custom_balance = check_custom_balance(db, user_id, instrument.ticker)
             if user_custom_balance < order.quantity:
                 # raise HTTPException(status_code=400, detail='На счету пользователя не хватает выбранной валюты')
-                return Response('secnd one' ,status_code=422)
+                return Response("secnd one", status_code=422)
         order_processing(db, order)
     else:
         need_quantity = payload.qty
         final_price = 0
-        opposite_order_direction = models.DirectionsOrders.BUY if payload.direction == models.DirectionsOrders.SELL else models.DirectionsOrders.SELL
-        currency_orders_quantity = db.query(func.sum(models.Order.quantity - models.Order.filled_quantity)).filter(and_(models.Order.direction == opposite_order_direction, models.Order.filled == False, models.Order.deleted_at == None, models.Order.instrument_id == instrument.id)).first()[0]
+        opposite_order_direction = (
+            models.DirectionsOrders.BUY
+            if payload.direction == models.DirectionsOrders.SELL
+            else models.DirectionsOrders.SELL
+        )
+        currency_orders_quantity = (
+            db.query(func.sum(models.Order.quantity - models.Order.filled))
+            .filter(
+                and_(
+                    models.Order.direction == opposite_order_direction,
+                    models.Order.status != models.StatusOrders.EXECUTED,
+                    models.Order.status != models.StatusOrders.CANCELLED,
+                    models.Order.deleted_at == None,
+                    models.Order.instrument_id == instrument.id,
+                )
+            )
+            .first()[0]
+        )
         if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
             # raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
-                return Response('thied one' ,status_code=423)
-        
+            return Response("thied one", status_code=423)
+
         if payload.direction == models.DirectionsOrders.BUY:
-            orders = db.query(models.Order).filter(and_(
-                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False, models.Order.instrument_id == instrument.id
-            )).order_by(models.Order.price.asc(), models.Order.created_at.desc()).all()
+            orders = (
+                db.query(models.Order)
+                .filter(
+                    and_(
+                        models.Order.direction == opposite_order_direction,
+                        models.Order.deleted_at == None,
+                        models.Order.status != models.StatusOrders.EXECUTED,
+                        models.Order.status != models.StatusOrders.CANCELLED,
+                        models.Order.instrument_id == instrument.id,
+                    )
+                )
+                .order_by(models.Order.price.asc(), models.Order.created_at.desc())
+                .all()
+            )
         else:
-            orders = db.query(models.Order).filter(and_(
-                models.Order.direction == opposite_order_direction, models.Order.deleted_at == None, models.Order.filled == False, models.Order.instrument_id == instrument.id
-            )).order_by(models.Order.price.desc(), models.Order.created_at.desc()).all()
+            orders = (
+                db.query(models.Order)
+                .filter(
+                    and_(
+                        models.Order.direction == opposite_order_direction,
+                        models.Order.deleted_at == None,
+                        models.Order.status != models.StatusOrders.EXECUTED,
+                        models.Order.status != models.StatusOrders.CANCELLED,
+                        models.Order.instrument_id == instrument.id,
+                    )
+                )
+                .order_by(models.Order.price.desc(), models.Order.created_at.desc())
+                .all()
+            )
 
         stocked_orders = list()
         for another_order in orders:
-            local_need_quantity = another_order.quantity - another_order.filled_quantity
-            if order.filled_quantity + local_need_quantity > order.quantity:
+            local_need_quantity = another_order.quantity - another_order.filled
+            if order.filled + local_need_quantity > order.quantity:
                 stocked_orders.append(another_order)
                 break
 
@@ -138,13 +249,15 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
             stocked_orders.append(another_order)
             # print(f"finding bad order: id:{another_order.id}, price:{another_order.price}, quantity:{another_order.quantity}")
             final_price = another_order.quantity * another_order.price
-            if payload.direction == models.DirectionsOrders.BUY and final_price > user_rub_balance:
+            if (
+                payload.direction == models.DirectionsOrders.BUY
+                and final_price > user_rub_balance
+            ):
                 # raise HTTPException(status_code=400, detail='На счету пользователя недостаточно денег для закрытия заказа')
-                return Response('fourth one' ,status_code=424)
-            
-            if order.filled_quantity + local_need_quantity == order.quantity:
+                return Response("fourth one", status_code=424)
+
+            if order.filled + local_need_quantity == order.quantity:
                 break
-        
 
         db.add(order)
         db.commit()
@@ -152,10 +265,7 @@ def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db)
 
         for another_order in stocked_orders:
             if order.direction == models.DirectionsOrders.BUY:
-                making_a_deal(order, another_order ,db)
+                making_a_deal(order, another_order, db)
             else:
-                making_a_deal(another_order, order ,db)
-    return {
-        'success': True,
-        'order_id': order.id
-    }
+                making_a_deal(another_order, order, db)
+    return {"success": True, "order_id": order.id}

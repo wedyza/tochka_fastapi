@@ -1,5 +1,6 @@
-#type: ignore
+# type: ignore
 from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     DATABASE_PORT: int
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     authjwt_cookie_csrf_protect: bool = True
 
     class Config:
-        env_file = './.env'
+        env_file = "./.env"
 
 
 settings = Settings()
