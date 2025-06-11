@@ -21,12 +21,11 @@ def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
     balance_instance = db.query(models.Balance).filter(and_(models.Balance.user_id == user_id, models.Balance.instrument_id == instrument_id)).first()
     if not balance_instance is None:
         balance_instance.amount -= amount
-
         if balance_instance.amount == 0:
             db.delete(balance_instance)
             db.commit()
         elif balance_instance.amount < 0:
-            raise HTTPException(status_code=400, detail='Баланс не может опустится ниже 0!')
+            raise HTTPException(status_code=410, detail='Баланс не может опустится ниже 0!')
         else:
             db.commit()
             db.refresh(balance_instance)
@@ -34,7 +33,11 @@ def withdraw_balance(db:Session, user_id:str, instrument_id:str, amount:float):
             'success': True
         }
     # print("error")
-    raise HTTPException(status_code=401, detail='Невозможно снять того, чего нету!')
+    instrument = db.query(models.Instrument).filter(models.Instrument.id == instrument_id).first()
+    print(instrument_id)
+    print(instrument.deleted_at)
+    print(instrument)
+    raise HTTPException(status_code=411, detail='Невозможно снять того, чего нету!')
 
 
 def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str):
@@ -43,7 +46,7 @@ def unlock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: st
     if rub_instrument is None:
         print(rub_instrument)
         print(instrument_id)
-        raise HTTPException(status_code=402, detail='В системе отсутствует нужная валюта!')
+        raise HTTPException(status_code=412, detail='В системе отсутствует нужная валюта!')
 
     balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
     if balance is not None:
@@ -69,7 +72,7 @@ def lock_custom_balance(db:Session, user_id:str, amount:int, instrument_id: str)
     if rub_instrument is None:
         print(rub_instrument)
         print(instrument_id)
-        raise HTTPException(status_code=403, detail='В системе отсутствует нужная валюта!')
+        raise HTTPException(status_code=413, detail='В системе отсутствует нужная валюта!')
 
     balance = db.query(models.Balance).filter(models.Balance.user_id == user_id).filter(models.Balance.instrument_id == instrument_id).first()
 
@@ -142,6 +145,8 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     
     if not buy_order.price is None:
         unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
+
+    
     withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
     deposit_balance(db, seller.id, buy_instrument.id, final_price)
 

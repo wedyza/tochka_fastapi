@@ -117,7 +117,7 @@ class OrderInOrderbook(BaseModel):
     def qty(self)->int:
         return self.quantity - self.filled_quantity
     
-    class Config:
+    class Config: 
         fields = {'quantity': {'exclude': True}, 'filled_quantity': {'exclude': True}}
 
 
