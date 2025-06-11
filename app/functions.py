@@ -248,13 +248,13 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     else:
         final_price = sell_order.price * final_quantity
 
-    if not buy_order.price is None:
-        unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
 
     # print(seller.id)
     # for b in seller.balance:
     #     print(f"{b.instrument_id} - {b.amount}")
     try:
+        if not buy_order.price is None:
+            unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
         withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
         deposit_balance(db, seller.id, buy_instrument.id, final_price)
 
@@ -285,11 +285,12 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
         db.refresh(sell_order)
     except Exception as e:
         try:
-            print("seller balance:")
-            for b in seller.balance:
+            print("buyer balance:")
+            for b in buyer.balance:
                 print(f"{b.instrument_id} - {b.amount}")
         except:
             print('Ничего нет')
         finally:
+            print(f"buyer_id - {buyer.id}")
             print(f"seller_id - {seller.id}")
             raise e
