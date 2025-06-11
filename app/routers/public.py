@@ -82,14 +82,14 @@ async def get_orderbook(
         "bid_levels": base_orders.filter(
             models.Order.direction == models.DirectionsOrders.BUY
         )
-        .limit(limit)
         .order_by(models.Order.price.desc())
+        .limit(limit)
         .all(),
         "ask_levels": base_orders.filter(
             models.Order.direction == models.DirectionsOrders.SELL
         )
-        .limit(limit)
         .order_by(models.Order.price.desc())
+        .limit(limit)
         .all(),
     }
 

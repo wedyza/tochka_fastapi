@@ -66,7 +66,7 @@ def add_instrument(
             detail="Инструмент с одним из этих показателей уже существует!",
         )
     new_instrument = models.Instrument(**payload.model_dump())
-    print(f"Создан инструмент - {new_instrument.ticker}")
+    # print(f"Создан инструмент - {new_instrument.ticker}")
     db.add(new_instrument)
     db.commit()
     db.refresh(new_instrument)
@@ -119,7 +119,7 @@ def deposit(
         .filter(models.User.deleted_at == None)
         .first()
     )
-    print(payload)
+    # print(payload)
     if not user:
         raise HTTPException(
             status_code=404, detail="Пользователь с таким ID не найден!"
