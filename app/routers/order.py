@@ -154,6 +154,10 @@ def create_order(
             status_code=404, detail="Не найдено валюты с таким тикером!"
         )
 
+    if payload.price < 0 or payload.qty < 0:
+        raise HTTPException(
+            status_code=422, detail='Не правильные цифры'
+        )
     order = models.Order()
     order.direction = payload.direction
     order.user_id = user_id
@@ -236,7 +240,7 @@ def create_order(
 
         stocked_orders = list()
         order_local_filled = 0
-        
+
         for another_order in orders:
             local_need_quantity = another_order.quantity - another_order.filled
             if order_local_filled + local_need_quantity > order.quantity:

@@ -242,36 +242,37 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     else:
         final_price = sell_order.price * final_quantity
 
-        if not buy_order.price is None:
-            unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
-        withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
-        deposit_balance(db, seller.id, buy_instrument.id, final_price)
+    if not buy_order.price is None:
+        unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
+    withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
+    deposit_balance(db, seller.id, buy_instrument.id, final_price)
 
-        buy_order.filled += final_quantity
-        sell_order.filled += final_quantity
+    buy_order.filled += final_quantity
+    sell_order.filled += final_quantity
 
-        if not sell_order.price is None:
-            unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
-        deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
-        withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
-        if buy_order.filled == buy_order.quantity:
-            buy_order.status = models.StatusOrders.EXECUTED
-        else:
-            buy_order.status = models.StatusOrders.PARTIALLY_EXECUTED
+    if not sell_order.price is None:
+        unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
+    deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
+    withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
+    if buy_order.filled == buy_order.quantity:
+        buy_order.status = models.StatusOrders.EXECUTED
+    else:
+        buy_order.status = models.StatusOrders.PARTIALLY_EXECUTED
 
-        if sell_order.filled == sell_order.quantity:
-            sell_order.status = models.StatusOrders.EXECUTED
-        else:
-            sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
+    if sell_order.filled == sell_order.quantity:
+        sell_order.status = models.StatusOrders.EXECUTED
+    else:
+        sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
 
-        if buy_order.filled > buy_order.quantity or sell_order.filled > sell_order.quantity:
-            print("failed on filled > quantity")
-            print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} => buy quantity")
-            print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} => sell quantity")
+    if buy_order.filled > buy_order.quantity or sell_order.filled > sell_order.quantity:
+        print("failed on filled > quantity")
+        print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} => buy quantity")
+        print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} => sell quantity")
+        print(f"final quantity - {final_quantity}")
 
-        db.commit()
-        db.refresh(buy_order)
-        db.refresh(sell_order)
+    db.commit()
+    db.refresh(buy_order)
+    db.refresh(sell_order)
     # except Exception as e:
     #     try:
     #         print("buyer balance:")
