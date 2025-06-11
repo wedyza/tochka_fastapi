@@ -78,14 +78,12 @@ def delete_order(order_id: UUID, db: Session = Depends(get_db), user_id: str = D
 
 @router.post('')
 def create_order(payload: schemas.OrderCreateInput,db: Session = Depends(get_db), user_id: str = Depends(oauth2.require_user)):
-    print(payload)
     instrument = db.query(models.Instrument).filter(
         and_(models.Instrument.deleted_at == None, models.Instrument.ticker == payload.ticker)
     ).first()
     if instrument is None:
         raise HTTPException(status_code=404, detail='Не найдено валюты с таким тикером!')
-    print(instrument.id)
-    print(instrument.ticker)
+    print(f"payload - {payload}, instrument - {instrument.id}")
     
     order = models.Order()
     order.direction = payload.direction
