@@ -86,7 +86,7 @@ def check_custom_balance(db:Session, user_id:str, ticker: str):
     custom_instrument = db.query(models.Instrument).filter(models.Instrument.ticker==ticker).filter(models.Instrument.deleted_at == None).first()
 
     if custom_instrument is None:
-        print(custom_instrument)
+        print(custom_instrument) # начни завтра с отлова того, что иногда баланс/инструменты не могут найти друг друга
         print(ticker)
         raise HTTPException(status_code=404, detail='В системе отсутствуют данный инструмент!')
     
