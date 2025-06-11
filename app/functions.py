@@ -146,35 +146,43 @@ def making_a_deal(buy_order:models.Order, sell_order:models.Order, db:Session):
     if not buy_order.price is None:
         unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
 
-    
-    withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
-    deposit_balance(db, seller.id, buy_instrument.id, final_price)
+    try:
+        withdraw_balance(db, buyer.id, buy_instrument.id, final_price)
+        deposit_balance(db, seller.id, buy_instrument.id, final_price)
 
-    buy_order.filled_quantity += final_quantity
-    sell_order.filled_quantity += final_quantity
+        buy_order.filled_quantity += final_quantity
+        sell_order.filled_quantity += final_quantity
 
-    if not sell_order.price is None:
-        unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
-    deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
-    withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
+        if not sell_order.price is None:
+            unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
+        deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
+        withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
 
-    # print(f"quantity - {buy_order.quantity}")
-    # print(f"filled_quantity - {buy_order.filled_quantity}")
+        # print(f"quantity - {buy_order.quantity}")
+        # print(f"filled_quantity - {buy_order.filled_quantity}")
 
-    # print(f"just an sell order - {sell_order.quantity}, {sell_order.filled_quantity}")
-    if buy_order.filled_quantity == buy_order.quantity:
-        buy_order.status = models.StatusOrders.EXECUTED
-        buy_order.filled = True
-    else:
-        buy_order.status = models.StatusOrders.PARTIALLY_EXECUTED
-    
-    if sell_order.filled_quantity == sell_order.quantity:
-        sell_order.status = models.StatusOrders.EXECUTED
-        sell_order.filled = True
-    else:
-        sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
+        # print(f"just an sell order - {sell_order.quantity}, {sell_order.filled_quantity}")
+        if buy_order.filled_quantity == buy_order.quantity:
+            buy_order.status = models.StatusOrders.EXECUTED
+            buy_order.filled = True
+        else:
+            buy_order.status = models.StatusOrders.PARTIALLY_EXECUTED
+        
+        if sell_order.filled_quantity == sell_order.quantity:
+            sell_order.status = models.StatusOrders.EXECUTED
+            sell_order.filled = True
+        else:
+            sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
 
 
-    db.commit()
-    db.refresh(buy_order)
-    db.refresh(sell_order)
+        db.commit()
+        db.refresh(buy_order)
+        db.refresh(sell_order)
+    except Exception as e:
+        print(seller.id)
+        try:
+            for b in seller.balance:
+                print(f"{b.instrument_id} - {b.amount}")
+        except:
+            print('Ничего нет')
+        raise e
