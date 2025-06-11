@@ -236,6 +236,7 @@ def create_order(
 
         stocked_orders = list()
         order_local_filled = 0
+        
         for another_order in orders:
             local_need_quantity = another_order.quantity - another_order.filled
             if order_local_filled + local_need_quantity > order.quantity:
