@@ -198,6 +198,7 @@ def create_order(
             )
             .first()[0]
         )
+        print(currency_orders_quantity)
         if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
             # raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
             return Response("thied one", status_code=423)
