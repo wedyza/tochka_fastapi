@@ -46,8 +46,10 @@ def delete_instrument(ticker: str, db: Session = Depends(get_db), admin_id: str 
     
     instrument.deleted_at = text('now()')
 
-    # db.query(models.Balance).filter(models.Balance.instrument_id == instrument.id).delete()
-    # db.query(models.Order).filter(models.Order.instrument_id == instrument.id).delete()
+    db.query(models.Balance).filter(models.Balance.instrument_id == instrument.id).delete()
+    db.query(models.Order).filter(models.Order.instrument_id == instrument.id).update(
+        {models.Order.deleted_at: text('now()')}
+    )
     db.commit()
     db.refresh(instrument)
 
