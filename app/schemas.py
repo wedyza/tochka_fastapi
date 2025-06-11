@@ -110,8 +110,8 @@ class OrderCreateOutput(BaseModel):
 
 class OrderInOrderbook(BaseModel):
     price: int
-    quantity: int
-    filled_quantity: int
+    quantity: int = Field(..., exclude=True)
+    filled_quantity: int = Field(..., exclude=True)
 
     @computed_field
     def qty(self)->int:
