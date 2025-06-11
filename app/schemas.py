@@ -114,7 +114,7 @@ class OrderInOrderbook(BaseModel):
     filled_quantity: int
 
     @computed_field
-    def qty(self):
+    def qty(self)->int:
         return self.quantity - self.filled_quantity
     
     class Config:
