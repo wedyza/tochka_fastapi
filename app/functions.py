@@ -223,8 +223,9 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
     if buy_quantity <= 0 or sell_quantity <= 0:
-        print(f"{buy_order.quantity} - {buy_order.filled} = {buy_quantity} => buy quantity")
-        print(f"{sell_order.quantity} - {sell_order.filled} = {sell_quantity} => sell quantity")
+        print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} = {buy_quantity} => buy quantity")
+        print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} = {sell_quantity} => sell quantity")
+        print()
     final_quantity = buy_quantity if buy_quantity <= sell_quantity else sell_quantity
     buy_instrument = (
         db.query(models.Instrument)
