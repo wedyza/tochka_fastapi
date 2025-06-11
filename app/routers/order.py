@@ -239,7 +239,7 @@ def create_order(
         for another_order in orders:
             local_need_quantity = another_order.quantity - another_order.filled
             if order_local_filled + local_need_quantity > order.quantity:
-                if payload.direction == models.DirectionsOrders.BUY and (final_price + local_need_quantity * another_order.price) > user_rub_balance:
+                if payload.direction == models.DirectionsOrders.BUY and (final_price + (order.quantity - order_local_filled) * another_order.price) > user_rub_balance:
                     return Response("fourth one", status_code=424)
                 stocked_orders.append(another_order)
                 break
