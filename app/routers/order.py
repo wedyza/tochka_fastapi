@@ -266,7 +266,7 @@ def create_order(
         db.refresh(order)
 
         for another_order in stocked_orders:
-            another_order = db.query(models.Order).with_for_update().get(another_order.id)
+            another_order = db.query(models.Order).with_for_update().filter(models.Order.id == another_order.id).first()
             if order.direction == models.DirectionsOrders.BUY:
                 making_a_deal(order, another_order, db)
             else:
