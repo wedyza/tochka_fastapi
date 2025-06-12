@@ -381,7 +381,7 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     else:
         sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
 
-    if sell_order.filled > sell_order.quantity or buy_order.filled > buy_order.quantity:
+    if sell_order.filled > sell_order.quantity or buy_order.filled > buy_order.quantity or sell_order.filled < 0 or buy_order.filled < 0:
         return
 
     transaction = models.Transaction(instrument_id = sell_order.instrument_id, amount=final_quantity, price=transaction_price)
