@@ -248,7 +248,8 @@ def create_order(
                     return Response("fourth one", status_code=424)
                 stocked_orders.append(another_order)
                 break
-
+            print(another_order.id)
+            print(another_order.price)
             final_price += local_need_quantity * another_order.price
             stocked_orders.append(another_order)
             if (
