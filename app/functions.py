@@ -42,6 +42,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                 )
             )
             .order_by(models.Order.price.asc(), models.Order.created_at.asc())
+            .with_for_update().populate_existing()
             .all()
         )
     else:
@@ -57,6 +58,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                 )
             )
             .order_by(models.Order.price.desc(), models.Order.created_at.asc())
+            .with_for_update().populate_existing()
             .all()
         )
 
@@ -89,10 +91,6 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
     db.refresh(order)
 
     for another_order in stocked_orders:
-        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).populate_existing().first()
-        print(another_order.id)
-        print(another_order.filled)
-        print()
         if another_order.status == models.StatusOrders.CANCELLED or another_order.status == models.StatusOrders.EXECUTED:
             market_order_processing()
         if order.direction == models.DirectionsOrders.BUY:
@@ -325,8 +323,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     buyer = db.query(models.User).filter(models.User.id == buy_order.user_id).first()
     seller = db.query(models.User).filter(models.User.id == sell_order.user_id).first()
 
-    buy_order = db.query(models.Order).with_for_update(nowait=True).filter(models.Order.id == buy_order.id).populate_existing().first()
-    sell_order = db.query(models.Order).with_for_update(nowait=True).filter(models.Order.id == sell_order.id).populate_existing().first()
 
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
