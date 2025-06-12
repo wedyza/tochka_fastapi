@@ -200,6 +200,7 @@ def create_order(
                     models.Order.instrument_id == instrument.id,
                 )
             )
+            .with_for_update()
             .first()[0]
         )
         print(f"we have - {currency_orders_quantity}, user need - {need_quantity}")
@@ -266,6 +267,7 @@ def create_order(
         db.refresh(order)
 
         for another_order in stocked_orders:
+            another_order = db.query(models.Order).with_for_update().get(another_order.id)
             if order.direction == models.DirectionsOrders.BUY:
                 making_a_deal(order, another_order, db)
             else:

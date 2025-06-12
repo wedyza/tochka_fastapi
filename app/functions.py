@@ -186,6 +186,7 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price >= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
+            .with_for_update()
             .all()
         )
     else:
@@ -203,11 +204,12 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price <= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
+            .with_for_update()
             .all()
         )
 
     for another_order in opposite_orders:
-        order = db.query(models.Order).filter(models.Order.id == order.id).first()
+        order = db.query(models.Order).filter(models.Order.id == order.id).with_for_update().first()
         if order.status == models.StatusOrders.EXECUTED or order.status == models.StatusOrders.CANCELLED:
             return
         if order.direction == models.DirectionsOrders.BUY:
@@ -220,9 +222,9 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     buyer = db.query(models.User).filter(models.User.id == buy_order.user_id).first()
     seller = db.query(models.User).filter(models.User.id == sell_order.user_id).first()
 
-    buy_order = db.query(models.Order).with_for_update().get(buy_order.id)
-    sell_order = db.query(models.Order).with_for_update().get(sell_order.id)
-    
+    # buy_order = db.query(models.Order).with_for_update().get(buy_order.id)
+    # sell_order = db.query(models.Order).with_for_update().get(sell_order.id)
+
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
     # if buy_quantity <= 0 or sell_quantity <= 0:
