@@ -5,6 +5,7 @@ from .. import schemas, models, utils
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..config import settings
+from typing import List
 
 router = APIRouter()
 from ..oauth2 import create_access_token
