@@ -10,6 +10,7 @@ from ..functions import (
     making_a_deal,
     order_processing,
     unlock_custom_balance,
+    market_order_processing
 )
 from typing import List
 from uuid import UUID
@@ -182,94 +183,5 @@ def create_order(
                 return Response("secnd one", status_code=422)
         order_processing(db, order)
     else:
-        need_quantity = payload.qty
-        final_price = 0
-        opposite_order_direction = (
-            models.DirectionsOrders.BUY
-            if payload.direction == models.DirectionsOrders.SELL
-            else models.DirectionsOrders.SELL
-        )
-        currency_orders_quantity = (
-            db.query(func.sum(models.Order.quantity - models.Order.filled))
-            .filter(
-                and_(
-                    models.Order.direction == opposite_order_direction,
-                    models.Order.status != models.StatusOrders.EXECUTED,
-                    models.Order.status != models.StatusOrders.CANCELLED,
-                    models.Order.deleted_at == None,
-                    models.Order.instrument_id == instrument.id,
-                )
-            )
-            .first()[0]
-        )
-        print(f"we have - {currency_orders_quantity}, user need - {need_quantity}")
-        if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
-            # raise HTTPException(status_code=400, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
-            return Response("thied one", status_code=423)
-
-        if payload.direction == models.DirectionsOrders.BUY:
-            orders = (
-                db.query(models.Order)
-                .filter(
-                    and_(
-                        models.Order.direction == opposite_order_direction,
-                        models.Order.deleted_at == None,
-                        models.Order.status != models.StatusOrders.EXECUTED,
-                        models.Order.status != models.StatusOrders.CANCELLED,
-                        models.Order.instrument_id == instrument.id,
-                    )
-                )
-                .order_by(models.Order.price.asc(), models.Order.created_at.desc())
-                .all()
-            )
-        else:
-            orders = (
-                db.query(models.Order)
-                .filter(
-                    and_(
-                        models.Order.direction == opposite_order_direction,
-                        models.Order.deleted_at == None,
-                        models.Order.status != models.StatusOrders.EXECUTED,
-                        models.Order.status != models.StatusOrders.CANCELLED,
-                        models.Order.instrument_id == instrument.id,
-                    )
-                )
-                .order_by(models.Order.price.desc(), models.Order.created_at.desc())
-                .all()
-            )
-
-        stocked_orders = list()
-        order_local_filled = 0
-
-        for another_order in orders:
-            local_need_quantity = another_order.quantity - another_order.filled
-            if order_local_filled + local_need_quantity > order.quantity:
-                if payload.direction == models.DirectionsOrders.BUY and (final_price + (order.quantity - order_local_filled) * another_order.price) > user_rub_balance:
-                    return Response("fourth one", status_code=424)
-                stocked_orders.append(another_order)
-                break
-            print(another_order.id)
-            print(another_order.price)
-            final_price += local_need_quantity * another_order.price
-            stocked_orders.append(another_order)
-            if (
-                payload.direction == models.DirectionsOrders.BUY
-                and final_price > user_rub_balance
-            ):
-                # raise HTTPException(status_code=400, detail='На счету пользователя недостаточно денег для закрытия заказа')
-                return Response("fourth one", status_code=424)
-            order_local_filled += local_need_quantity
-            if order_local_filled == order.quantity:
-                break
-
-        db.add(order)
-        db.commit()
-        db.refresh(order)
-
-        for another_order in stocked_orders:
-            another_order = db.query(models.Order).with_for_update().filter(models.Order.id == another_order.id).first()
-            if order.direction == models.DirectionsOrders.BUY:
-                making_a_deal(order, another_order, db)
-            else:
-                making_a_deal(another_order, order, db)
+        order = market_order_processing(db, order, user_rub_balance)
     return {"success": True, "order_id": order.id}

@@ -5,6 +5,101 @@ from app import schemas, models
 from sqlalchemy import and_
 
 
+def market_order_processing(db:Session, order:models.Order, user_rub_balance:float):
+    need_quantity = order.quantity
+    final_price = 0
+    opposite_order_direction = (
+        models.DirectionsOrders.BUY
+        if order.direction == models.DirectionsOrders.SELL
+        else models.DirectionsOrders.SELL
+    )
+    currency_orders_quantity = (
+        db.query(func.sum(models.Order.quantity - models.Order.filled))
+        .filter(
+            and_(
+                models.Order.direction == opposite_order_direction,
+                models.Order.status != models.StatusOrders.EXECUTED,
+                models.Order.status != models.StatusOrders.CANCELLED,
+                models.Order.deleted_at == None,
+                models.Order.instrument_id == instrument.id,
+            )
+        )
+        .first()[0]
+    )
+    if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
+        raise HTTPException(status_code=423, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
+
+    if order.direction == models.DirectionsOrders.BUY:
+        orders = (
+            db.query(models.Order)
+            .filter(
+                and_(
+                    models.Order.direction == opposite_order_direction,
+                    models.Order.deleted_at == None,
+                    models.Order.status != models.StatusOrders.EXECUTED,
+                    models.Order.status != models.StatusOrders.CANCELLED,
+                    models.Order.instrument_id == instrument.id,
+                )
+            )
+            .order_by(models.Order.price.asc(), models.Order.created_at.desc())
+            .all()
+        )
+    else:
+        orders = (
+            db.query(models.Order)
+            .filter(
+                and_(
+                    models.Order.direction == opposite_order_direction,
+                    models.Order.deleted_at == None,
+                    models.Order.status != models.StatusOrders.EXECUTED,
+                    models.Order.status != models.StatusOrders.CANCELLED,
+                    models.Order.instrument_id == instrument.id,
+                )
+            )
+            .order_by(models.Order.price.desc(), models.Order.created_at.desc())
+            .all()
+        )
+
+    stocked_orders = list()
+    order_local_filled = 0
+
+    for another_order in orders:
+        local_need_quantity = another_order.quantity - another_order.filled
+        if order_local_filled + local_need_quantity > order.quantity:
+            if order.direction == models.DirectionsOrders.BUY and (final_price + (order.quantity - order_local_filled) * another_order.price) > user_rub_balance:
+                raise HTTPException(status_code=424, detail='На счету пользователя недостаточно денег для закрытия заказа')
+            stocked_orders.append(another_order)
+            break
+
+        final_price += local_need_quantity * another_order.price
+        stocked_orders.append(another_order)
+
+        if (
+            order.direction == models.DirectionsOrders.BUY
+            and final_price > user_rub_balance
+        ):
+            raise HTTPException(status_code=424, detail='На счету пользователя недостаточно денег для закрытия заказа')
+        
+        order_local_filled += local_need_quantity
+        if order_local_filled == order.quantity:
+            break
+
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    for another_order in stocked_orders:
+        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).first()
+        if another_order.status == models.StatusOrders.CANCELLED or another_order.status == models.StatusOrders.EXECUTED:
+            market_order_processing()
+        if order.direction == models.DirectionsOrders.BUY:
+            making_a_deal(order, another_order, db)
+        else:
+            making_a_deal(another_order, order, db)
+    
+    return order
+
+
 def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float):
     balance_instance = (
         db.query(models.Balance)
@@ -186,7 +281,6 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price >= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
-            .with_for_update()
             .all()
         )
     else:
@@ -204,14 +298,18 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price <= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
-            .with_for_update()
             .all()
         )
 
     for another_order in opposite_orders:
-        order = db.query(models.Order).filter(models.Order.id == order.id).with_for_update().first()
+        order = db.query(models.Order).filter(models.Order.id == order.id).first()
         if order.status == models.StatusOrders.EXECUTED or order.status == models.StatusOrders.CANCELLED:
             return
+        
+        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).first()
+        if another_order.status == models.StatusOrders.EXECUTED or another_order.status == models.StatusOrders.CANCELLED:
+            return
+        
         if order.direction == models.DirectionsOrders.BUY:
             making_a_deal(order, another_order, db)
         else:
@@ -280,6 +378,9 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
         sell_order.status = models.StatusOrders.EXECUTED
     else:
         sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
+
+    if sell_order.filled > sell_order.quantity or buy_order.filled > buy_order.quantity:
+        return
 
     transaction = models.Transaction(instrument_id = sell_order.instrument_id, amount=final_quantity, price=transaction_price)
 
