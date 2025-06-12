@@ -140,48 +140,49 @@ def create_order(
     db: Session = Depends(get_db),
     user_id: str = Depends(oauth2.require_user),
 ):
-    instrument = (
-        db.query(models.Instrument)
-        .filter(
-            and_(
-                models.Instrument.deleted_at == None,
-                models.Instrument.ticker == payload.ticker,
+    with db.begin():
+        instrument = (
+            db.query(models.Instrument)
+            .filter(
+                and_(
+                    models.Instrument.deleted_at == None,
+                    models.Instrument.ticker == payload.ticker,
+                )
             )
+            .first()
         )
-        .first()
-    )
-    if instrument is None:
-        raise HTTPException(
-            status_code=404, detail="Не найдено валюты с таким тикером!"
-        )
+        if instrument is None:
+            raise HTTPException(
+                status_code=404, detail="Не найдено валюты с таким тикером!"
+            )
 
-    if payload.price < 0 or payload.qty < 0:
-        raise HTTPException(
-            status_code=422, detail='Не правильные цифры'
-        )
-    order = models.Order()
-    order.direction = payload.direction
-    order.user_id = user_id
-    order.instrument_id = instrument.id
-    order.quantity = payload.qty
-    order.filled = 0
+        if payload.price < 0 or payload.qty < 0:
+            raise HTTPException(
+                status_code=422, detail='Не правильные цифры'
+            )
+        order = models.Order()
+        order.direction = payload.direction
+        order.user_id = user_id
+        order.instrument_id = instrument.id
+        order.quantity = payload.qty
+        order.filled = 0
 
-    user_rub_balance = check_custom_balance(db, user_id, "RUB")
-    if payload.price != 0:
-        user_must_pay = payload.qty * payload.price
+        user_rub_balance = check_custom_balance(db, user_id, "RUB")
+        if payload.price != 0:
+            user_must_pay = payload.qty * payload.price
 
-        order.price = payload.price
+            order.price = payload.price
 
-        if payload.direction == models.DirectionsOrders.BUY:
-            if user_rub_balance < user_must_pay:
-                # raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
-                return Response("first one", status_code=421)
+            if payload.direction == models.DirectionsOrders.BUY:
+                if user_rub_balance < user_must_pay:
+                    # raise HTTPException(status_code=400, detail=f'На счету пользователя {user_rub_balance} рублей. Необходимо еще {user_must_pay - user_rub_balance} для создания заказа с указанными хар-ками')
+                    return Response("first one", status_code=421)
+            else:
+                user_custom_balance = check_custom_balance(db, user_id, instrument.ticker)
+                if user_custom_balance < order.quantity:
+                    # raise HTTPException(status_code=400, detail='На счету пользователя не хватает выбранной валюты')
+                    return Response("secnd one", status_code=422)
+            order_processing(db, order)
         else:
-            user_custom_balance = check_custom_balance(db, user_id, instrument.ticker)
-            if user_custom_balance < order.quantity:
-                # raise HTTPException(status_code=400, detail='На счету пользователя не хватает выбранной валюты')
-                return Response("secnd one", status_code=422)
-        order_processing(db, order)
-    else:
-        order = market_order_processing(db, order, user_rub_balance)
-    return {"success": True, "order_id": order.id}
+            order = market_order_processing(db, order, user_rub_balance)
+        return {"success": True, "order_id": order.id}
