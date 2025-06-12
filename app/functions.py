@@ -41,7 +41,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                     models.Order.instrument_id == order.instrument_id,
                 )
             )
-            .order_by(models.Order.price.asc(), models.Order.created_at.desc())
+            .order_by(models.Order.price.asc(), models.Order.created_at.asc())
             .all()
         )
     else:
@@ -56,7 +56,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                     models.Order.instrument_id == order.instrument_id,
                 )
             )
-            .order_by(models.Order.price.desc(), models.Order.created_at.desc())
+            .order_by(models.Order.price.desc(), models.Order.created_at.asc())
             .all()
         )
 
@@ -281,6 +281,7 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price >= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
+            .order_by(models.Order.created_at.asc())
             .all()
         )
     else:
@@ -298,6 +299,7 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price <= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
+            .order_by(models.Order.created_at.asc())
             .all()
         )
 
