@@ -18,5 +18,5 @@ def get_me(
             .filter(models.Instrument.id == coin.instrument_id)
             .first()
         )
-        answer[instrument.ticker] = coin.amount
+        answer[instrument.ticker] = coin.amount - coin.locked
     return answer
