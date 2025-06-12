@@ -304,11 +304,11 @@ def order_processing(db: Session, order: models.Order):
         )
 
     for another_order in opposite_orders:
-        order = db.query(models.Order).filter(models.Order.id == order.id).first()
+        order = db.query(models.Order).filter(models.Order.id == order.id).with_for_update().first()
         if order.status == models.StatusOrders.EXECUTED or order.status == models.StatusOrders.CANCELLED:
             return
         
-        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).first()
+        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).with_for_update().first()
         if another_order.status == models.StatusOrders.EXECUTED or another_order.status == models.StatusOrders.CANCELLED:
             return
         
