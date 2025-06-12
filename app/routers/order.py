@@ -200,7 +200,6 @@ def create_order(
                     models.Order.instrument_id == instrument.id,
                 )
             )
-            .with_for_update()
             .first()[0]
         )
         print(f"we have - {currency_orders_quantity}, user need - {need_quantity}")
