@@ -2,7 +2,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app import schemas, models
-from sqlalchemy import and_
+from sqlalchemy import and_, func, text
 
 
 def market_order_processing(db:Session, order:models.Order, user_rub_balance:float):
