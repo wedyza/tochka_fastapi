@@ -61,7 +61,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
             .with_for_update(of=models.Order).populate_existing()
             .all()
         )
-
+    prnit(orders[0].filled)
     stocked_orders = list()
     order_local_filled = 0
 
