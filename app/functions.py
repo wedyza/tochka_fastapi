@@ -366,8 +366,8 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
 
     if not sell_order.price is None:
         unlock_custom_balance(db, seller.id, final_quantity, sell_order.instrument_id)
-    deposit_balance(db, buyer.id, buy_order.instrument.id, final_quantity)
-    withdraw_balance(db, seller.id, buy_order.instrument.id, final_quantity)
+    deposit_balance(db, buyer.id, buy_order.instrument_id, final_quantity)
+    withdraw_balance(db, seller.id, buy_order.instrument_id, final_quantity)
 
 
     if buy_order.filled == buy_order.quantity:
