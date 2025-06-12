@@ -220,6 +220,9 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     buyer = db.query(models.User).filter(models.User.id == buy_order.user_id).first()
     seller = db.query(models.User).filter(models.User.id == sell_order.user_id).first()
 
+    buy_order = db.query(models.Order).with_for_update().get(buy_order.id)
+    sell_order = db.query(models.Order).with_for_update().get(sell_order.id)
+    
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
     # if buy_quantity <= 0 or sell_quantity <= 0:
@@ -227,13 +230,7 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     #     print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} = {sell_quantity} => sell quantity")
     #     print()
     
-    final_quantity = buy_quantity if buy_quantity <= sell_quantity else sell_quantity
-    
-    if buy_order.filled + final_quantity > buy_order.quantity or sell_order.filled + final_quantity > sell_order.quantity:
-        print("failed on filled > quantity | START")
-        print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} => buy quantity")
-        print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} => sell quantity")
-        print(f"final quantity - {final_quantity}")
+    final_quantity = min(buy_quantity, sell_quantity)
 
     buy_instrument = (
         db.query(models.Instrument)
@@ -247,8 +244,10 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
 
     if sell_order.price is None:
         final_price = buy_order.price * final_quantity
+        transaction_price = buy_order.price
     else:
         final_price = sell_order.price * final_quantity
+        transaction_price = sell_order.price
 
     if not buy_order.price is None:
         unlock_custom_balance(db, buyer.id, final_price, buy_instrument.id)
@@ -280,9 +279,16 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     else:
         sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
 
+    transaction = models.Transaction(instrument_id = sell_order.instrument_id, amount=final_quantity, price=transaction_price)
+
+    db.add(transaction)
     db.commit()
     db.refresh(buy_order)
     db.refresh(sell_order)
+    db.refresh(transaction)
+
+
+
     # except Exception as e:
     #     try:
     #         print("buyer balance:")

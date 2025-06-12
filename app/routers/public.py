@@ -94,5 +94,24 @@ async def get_orderbook(
 
 
 @router.get("/transactions/{ticker}")
-async def get_transaction_history(ticker: str, limit=10, db: Session = Depends(get_db)):
-    return f"{ticker} transactions {limit}"
+async def get_transaction_history(ticker: str, limit=10, db: Session = Depends(get_db))->List[schemas.TransactionsResponse]:
+    ticker_entity = (
+        db.query(models.Instrument)
+        .filter(models.Instrument.ticker == ticker)
+        .filter(models.Instrument.deleted_at == None)
+        .first()
+    )
+    if ticker_entity is None:
+        return Response("Not found", status_code=404)
+    
+    transactions = db.query(models.Transaction).filter(models.Transaction.instrument_id == ticker_entity.id).order_by(models.Transaction.created_at.desc()).all()
+    result = []
+    for transaction in transactions:
+        result.append({
+            'ticker': ticker,
+            'amount': transaction.amount,
+            'price': transaction.price,
+            'timestamp': transaction.created_at
+        })
+    
+    return result

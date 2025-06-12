@@ -143,3 +143,10 @@ class OrdersResponse(BaseModel):
     body: OrderBody | OrderBodyWithoutPrice
     filled: int
     status: StatusOrders
+
+
+class TransactionsResponse(BaseModel):
+    ticker: str
+    timestamp: datetime
+    amount: int
+    price: float

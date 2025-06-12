@@ -106,5 +106,4 @@ class Transaction(Base):
         UUID(as_uuid=True), ForeignKey(Instrument.id), nullable=False
     )
     amount = Column(Float, nullable=False)
-    currency = Column(UUID(as_uuid=True), ForeignKey(Instrument.id), nullable=False)
-    currency_amount = Column(Float, nullable=False)
+    price = Column(Float, nullable=False)
