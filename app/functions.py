@@ -42,7 +42,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                 )
             )
             .order_by(models.Order.price.asc(), models.Order.created_at.asc())
-            .with_for_update().populate_existing()
+            .with_for_update(of=models.Order).populate_existing()
             .all()
         )
     else:
@@ -58,7 +58,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                 )
             )
             .order_by(models.Order.price.desc(), models.Order.created_at.asc())
-            .with_for_update().populate_existing()
+            .with_for_update(of=models.Order).populate_existing()
             .all()
         )
 
