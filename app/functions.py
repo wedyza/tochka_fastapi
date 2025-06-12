@@ -89,7 +89,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
     db.refresh(order)
 
     for another_order in stocked_orders:
-        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).with_for_update().first()
+        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).with_for_update().populate_existing().first()
         if another_order.status == models.StatusOrders.CANCELLED or another_order.status == models.StatusOrders.EXECUTED:
             market_order_processing()
         if order.direction == models.DirectionsOrders.BUY:
@@ -324,7 +324,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
 
     buy_order = db.query(models.Order).with_for_update().filter(models.Order.id == buy_order.id).first()
     sell_order = db.query(models.Order).with_for_update().filter(models.Order.id == sell_order.id).first()
-    print('lock')
 
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
@@ -390,5 +389,3 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     db.refresh(buy_order)
     db.refresh(sell_order)
     db.refresh(transaction)
-
-    print('unlock')
