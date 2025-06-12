@@ -114,14 +114,14 @@ def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float
     )
     if not balance_instance is None:
         balance_instance.amount += amount
-        # db.commit()
+        db.commit()
         db.refresh(balance_instance)
     else:
         new_balance_instance = models.Balance(
             user_id=user_id, instrument_id=instrument_id, amount=amount
         )
         db.add(new_balance_instance)
-        # db.commit()
+        db.commit()
         db.refresh(new_balance_instance)
 
 
@@ -140,13 +140,13 @@ def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: floa
         balance_instance.amount -= amount
         if balance_instance.amount == 0:
             db.delete(balance_instance)
-            # db.commit()
+            db.commit()
         elif balance_instance.amount < 0:
             raise HTTPException(
                 status_code=410, detail="Баланс не может опустится ниже 0!"
             )
         else:
-            # db.commit()
+            db.commit()
             db.refresh(balance_instance)
         return {"success": True}
     raise HTTPException(status_code=411, detail="Невозможно снять того, чего нету!")
@@ -177,7 +177,7 @@ def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id:
     )
     if balance is not None:
         balance.locked -= amount
-        # db.commit()
+        db.commit()
         db.refresh(balance)
     else:
         user = db.query(models.User).filter(models.User.id == user_id).first()
