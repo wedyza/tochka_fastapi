@@ -322,8 +322,8 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     buyer = db.query(models.User).filter(models.User.id == buy_order.user_id).first()
     seller = db.query(models.User).filter(models.User.id == sell_order.user_id).first()
 
-    buy_order = db.query(models.Order).with_for_update().get(buy_order.id)
-    sell_order = db.query(models.Order).with_for_update().get(sell_order.id)
+    buy_order = db.query(models.Order).with_for_update().filter(models.Order.id == buy_order.id).first()
+    sell_order = db.query(models.Order).with_for_update().filter(models.Order.id == sell_order.id).first()
 
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
