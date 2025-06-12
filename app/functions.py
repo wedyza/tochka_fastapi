@@ -86,9 +86,9 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
         if order_local_filled == order.quantity:
             break
 
-    db.add(order)
-    db.commit()
-    db.refresh(order)
+    # db.add(order)
+    # db.commit()
+    # db.refresh(order)
 
     for another_order in stocked_orders:
         if another_order.status == models.StatusOrders.CANCELLED or another_order.status == models.StatusOrders.EXECUTED:
