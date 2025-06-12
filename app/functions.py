@@ -383,6 +383,10 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     transaction = models.Transaction(instrument_id = sell_order.instrument_id, amount=final_quantity, price=transaction_price)
     # transaction = models.Transaction(instrument_id = buy_instrument.id, amount=final, price=transaction_price)
 
+    if sell_order.id is None:
+        db.add(sell_order)
+    if buy_order.id is None:
+        db.add(buy_order)
     db.add(transaction)
     db.commit()
     db.refresh(buy_order)
