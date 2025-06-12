@@ -21,7 +21,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                 models.Order.status != models.StatusOrders.EXECUTED,
                 models.Order.status != models.StatusOrders.CANCELLED,
                 models.Order.deleted_at == None,
-                models.Order.instrument_id == instrument.id,
+                models.Order.instrument_id == order.instrument_id,
             )
         )
         .first()[0]
@@ -38,7 +38,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                     models.Order.deleted_at == None,
                     models.Order.status != models.StatusOrders.EXECUTED,
                     models.Order.status != models.StatusOrders.CANCELLED,
-                    models.Order.instrument_id == instrument.id,
+                    models.Order.instrument_id == order.instrument_id,
                 )
             )
             .order_by(models.Order.price.asc(), models.Order.created_at.desc())
@@ -53,7 +53,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
                     models.Order.deleted_at == None,
                     models.Order.status != models.StatusOrders.EXECUTED,
                     models.Order.status != models.StatusOrders.CANCELLED,
-                    models.Order.instrument_id == instrument.id,
+                    models.Order.instrument_id == order.instrument_id,
                 )
             )
             .order_by(models.Order.price.desc(), models.Order.created_at.desc())
