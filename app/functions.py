@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app import schemas, models
 from sqlalchemy import and_, func, text
+from .database import get_db
 
 
 def market_order_processing(db:Session, order:models.Order, user_rub_balance:float):
@@ -92,6 +93,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
 
 
 def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float):
+    db = get_db()
     balance_instance = (
         db.query(models.Balance)
         .filter(
@@ -116,6 +118,7 @@ def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float
 
 
 def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: float):
+    db = get_db()
     balance_instance = (
         db.query(models.Balance)
         .filter(
@@ -143,6 +146,7 @@ def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: floa
 
 
 def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: str):
+    db = get_db()
     rub_instrument = (
         db.query(models.Instrument)
         .filter(
@@ -170,6 +174,7 @@ def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id:
 
 
 def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: str):
+    db = get_db()
     rub_instrument = (
         db.query(models.Instrument)
         .filter(
@@ -198,6 +203,7 @@ def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: s
 
 
 def check_custom_balance(db: Session, user_id: str, ticker: str):
+    db = get_db()
     custom_instrument = (
         db.query(models.Instrument)
         .filter(models.Instrument.ticker == ticker)
