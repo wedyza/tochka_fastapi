@@ -100,7 +100,6 @@ def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float
                 models.Balance.instrument_id == instrument_id,
             )
         )
-        .with_for_update(of=models.Balance)
         .first()
     )
     if not balance_instance is None:
@@ -125,7 +124,6 @@ def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: floa
                 models.Balance.instrument_id == instrument_id,
             )
         )
-        .with_for_update(of=models.Balance)
         .first()
     )
     if not balance_instance is None:
@@ -165,7 +163,6 @@ def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id:
         db.query(models.Balance)
         .filter(models.Balance.user_id == user_id)
         .filter(models.Balance.instrument_id == instrument_id)
-        .with_for_update(of=models.Balance)
         .first()
     )
     if balance is not None:
@@ -193,7 +190,6 @@ def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: s
         db.query(models.Balance)
         .filter(models.Balance.user_id == user_id)
         .filter(models.Balance.instrument_id == instrument_id)
-        .with_for_update(of=models.Balance)
         .first()
     )
 
