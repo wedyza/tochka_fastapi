@@ -9,7 +9,7 @@ from sqlalchemy import TIMESTAMP, Column, ForeignKey, String, Boolean, text
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
-SQLALCHEMY_DATABASE_URL = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@localhost:{settings.DATABASE_PORT}/{settings.POSTGRES_DB}"
+SQLALCHEMY_DATABASE_URL = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@postgres:{settings.DATABASE_PORT}/{settings.POSTGRES_DB}"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_size=32, max_overflow=64, isolation_level="READ COMMITTED")
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
