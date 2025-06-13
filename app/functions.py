@@ -236,7 +236,8 @@ def order_processing(db: Session, order: models.Order):
         .first()
     )
     if order.direction == models.DirectionsOrders.SELL:
-        lock_custom_balance(db, order.user_id, order.quantity, order.instrument.id)
+        lock_custom_balance(db, order.user_id, order.quantity, order.instrument_id)
+        db.commit()
         opposite_orders = (
             db.query(models.Order)
             .filter(
@@ -248,6 +249,7 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price >= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
+            .with_for_update(of=models.Order)
             .order_by(models.Order.created_at.asc())
             .all()
         )
@@ -255,6 +257,7 @@ def order_processing(db: Session, order: models.Order):
         lock_custom_balance(
             db, order.user_id, order.quantity * order.price, rub_instrument.id
         )
+        db.commit()
         opposite_orders = (
             db.query(models.Order)
             .filter(
@@ -266,6 +269,7 @@ def order_processing(db: Session, order: models.Order):
             )
             .filter(models.Order.price <= order.price)
             .filter(models.Order.instrument_id == order.instrument_id)
+            .with_for_update(of=models.Order)
             .order_by(models.Order.created_at.asc())
             .all()
         )
