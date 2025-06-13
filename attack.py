@@ -5,7 +5,8 @@ async def fetch(session, url):
     async with session.post(url=url, json={
         'ticker': 'RAND',
         'qty': 5,
-        'direction': 'SELL'
+        'direction': 'SELL',
+        'price': 10
     }, headers={
         'Authorization': 'TOKEN eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiY2Y4OWQxYTEtOWQzZC00OTFhLWIwZjgtNjhkZGVmYjMxZmY0In0.CI44lu3QsiAKEVut2vt1U7rpXQBeRozqF0ks2rIdR5A'
     }) as response:
