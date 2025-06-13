@@ -55,6 +55,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
         if order_local_filled + local_need_quantity > order.quantity:
             if order.direction == models.DirectionsOrders.BUY and (final_price + (order.quantity - order_local_filled) * another_order.price) > user_rub_balance:
                 raise HTTPException(status_code=424, detail='На счету пользователя недостаточно денег для закрытия заказа')
+            order_local_filled = order.quantity
             stocked_orders.append(another_order)
             break
 
@@ -71,8 +72,8 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
         if order_local_filled == order.quantity:
             break
     
-    print(order_local_filled)
-    print(orders)
+    # print(order_local_filled)
+    # print(orders)
     if order_local_filled < order.quantity:
         raise HTTPException(status_code=423, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.') # Надо переделать так, чтобы коммиты срабатывали в нужных местах, а не повсюду, либо протестить поведение при наличии коммитов повсюду (можно еще попробовать создавать новые сессии, хз)
     # db.add(order)
