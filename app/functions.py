@@ -71,7 +71,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
         if order_local_filled == order.quantity:
             break
     
-    if local_need_quantity < order.quantity:
+    if order_local_filled < order.quantity:
         raise HTTPException(status_code=423, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.') # Надо переделать так, чтобы коммиты срабатывали в нужных местах, а не повсюду, либо протестить поведение при наличии коммитов повсюду (можно еще попробовать создавать новые сессии, хз)
     # db.add(order)
     # db.commit()
