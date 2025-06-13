@@ -13,21 +13,6 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
         if order.direction == models.DirectionsOrders.SELL
         else models.DirectionsOrders.SELL
     )
-    currency_orders_quantity = (
-        db.query(func.sum(models.Order.quantity - models.Order.filled))
-        .filter(
-            and_(
-                models.Order.direction == opposite_order_direction,
-                models.Order.status != models.StatusOrders.EXECUTED,
-                models.Order.status != models.StatusOrders.CANCELLED,
-                models.Order.deleted_at == None,
-                models.Order.instrument_id == order.instrument_id,
-            )
-        )
-        .first()[0]
-    )
-    if currency_orders_quantity is None or need_quantity > currency_orders_quantity:
-        raise HTTPException(status_code=423, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.')
 
     if order.direction == models.DirectionsOrders.BUY:
         orders = (
@@ -61,7 +46,7 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
             .with_for_update(of=models.Order)
             .all()
         )
-    print(orders[0].filled)
+    # print(orders[0].filled)
     stocked_orders = list()
     order_local_filled = 0
 
@@ -85,7 +70,9 @@ def market_order_processing(db:Session, order:models.Order, user_rub_balance:flo
         order_local_filled += local_need_quantity
         if order_local_filled == order.quantity:
             break
-
+    
+    if local_need_quantity < order.quantity:
+        raise HTTPException(status_code=423, detail='В данный момент в стакане нет столько валюты, сколько вы хотите обменять.') # Надо переделать так, чтобы коммиты срабатывали в нужных местах, а не повсюду, либо протестить поведение при наличии коммитов повсюду (можно еще попробовать создавать новые сессии, хз)
     # db.add(order)
     # db.commit()
     # db.refresh(order)
@@ -114,15 +101,15 @@ def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float
     )
     if not balance_instance is None:
         balance_instance.amount += amount
-        db.commit()
-        db.refresh(balance_instance)
+        # db.commit()
+        # db.refresh(balance_instance)
     else:
         new_balance_instance = models.Balance(
             user_id=user_id, instrument_id=instrument_id, amount=amount
         )
         db.add(new_balance_instance)
-        db.commit()
-        db.refresh(new_balance_instance)
+        # db.commit()
+        # db.refresh(new_balance_instance)
 
 
 def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: float):
@@ -140,14 +127,14 @@ def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: floa
         balance_instance.amount -= amount
         if balance_instance.amount == 0:
             db.delete(balance_instance)
-            db.commit()
+            # db.commit()
         elif balance_instance.amount < 0:
             raise HTTPException(
                 status_code=410, detail="Баланс не может опустится ниже 0!"
             )
-        else:
-            db.commit()
-            db.refresh(balance_instance)
+        # else:
+            # db.commit()
+            # db.refresh(balance_instance)
         return {"success": True}
     raise HTTPException(status_code=411, detail="Невозможно снять того, чего нету!")
 
@@ -177,8 +164,8 @@ def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id:
     )
     if balance is not None:
         balance.locked -= amount
-        db.commit()
-        db.refresh(balance)
+        # db.commit()
+        # db.refresh(balance)
     else:
         user = db.query(models.User).filter(models.User.id == user_id).first()
         print(f"user_id - {user.id}")
@@ -219,8 +206,8 @@ def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: s
 
     if balance is not None:
         balance.locked += amount
-        db.commit()
-        db.refresh(balance)
+        # db.commit()
+        # db.refresh(balance)
     else:
         print("balance not found")
 
@@ -299,14 +286,6 @@ def order_processing(db: Session, order: models.Order):
         )
 
     for another_order in opposite_orders:
-        order = db.query(models.Order).filter(models.Order.id == order.id).with_for_update().first()
-        if order.status == models.StatusOrders.EXECUTED or order.status == models.StatusOrders.CANCELLED:
-            return
-        
-        another_order = db.query(models.Order).filter(models.Order.id == another_order.id).with_for_update().first()
-        if another_order.status == models.StatusOrders.EXECUTED or another_order.status == models.StatusOrders.CANCELLED:
-            return
-        
         if order.direction == models.DirectionsOrders.BUY:
             making_a_deal(order, another_order, db)
         else:
@@ -320,10 +299,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
 
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
-    # if buy_quantity <= 0 or sell_quantity <= 0:
-    #     print(f"{buy_order.id} | {buy_order.quantity} - {buy_order.filled} = {buy_quantity} => buy quantity")
-    #     print(f"{sell_order.id} | {sell_order.quantity} - {sell_order.filled} = {sell_quantity} => sell quantity")
-    #     print()
     
     final_quantity = min(buy_quantity, sell_quantity)
 
@@ -375,7 +350,6 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
         sell_order.status = models.StatusOrders.PARTIALLY_EXECUTED
 
     transaction = models.Transaction(instrument_id = sell_order.instrument_id, amount=final_quantity, price=transaction_price)
-    # transaction = models.Transaction(instrument_id = buy_instrument.id, amount=final, price=transaction_price)
 
     if sell_order.id is None:
         db.add(sell_order)
