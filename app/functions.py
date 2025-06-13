@@ -110,7 +110,7 @@ def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float
         new_balance_instance = models.Balance(
             user_id=user_id, instrument_id=instrument_id, amount=amount
         )
-        # db.add(new_balance_instance)
+        db.add(new_balance_instance)
         # db.commit()
         # db.refresh(new_balance_instance)
 
@@ -167,20 +167,6 @@ def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id:
     )
     if balance is not None:
         balance.locked -= amount
-        # db.commit()
-        # db.refresh(balance)
-    # else:
-    #     user = db.query(models.User).filter(models.User.id == user_id).first()
-    #     print(f"user_id - {user.id}")
-    #     print(f"finding instrument_id - {instrument_id}")
-    #     try:
-    #         for balance in user.balance:
-    #             print(
-    #                 f"user balance - {balance.instrument_id}, amount - {balance.amount}, locked - {balance.locked}"
-    #             )
-    #     except:
-    #         print(user.balance)
-    #     print("balance not found")
 
 
 def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: str):
@@ -209,10 +195,6 @@ def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: s
 
     if balance is not None:
         balance.locked += amount
-        # db.commit()
-        # db.refresh(balance)
-    else:
-        print("balance not found")
 
 
 def check_custom_balance(db: Session, user_id: str, ticker: str):
