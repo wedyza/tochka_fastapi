@@ -139,6 +139,7 @@ def create_order(
     db: Session = Depends(get_db),
     user_id: str = Depends(oauth2.require_user),
 ):
+    print('enter')
     instrument = (
         db.query(models.Instrument)
         .filter(

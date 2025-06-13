@@ -60,6 +60,8 @@ def require_user(
             .first()
         )
 
+        print(user)
+
         if not user:
             raise UserNotFound("User no longer exist")
 
