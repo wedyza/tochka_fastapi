@@ -7,7 +7,6 @@ from .. import models, schemas, oauth2
 from sqlalchemy import and_, func, text
 from ..functions import (
     check_custom_balance,
-    making_a_deal,
     order_processing,
     unlock_custom_balance,
     market_order_processing

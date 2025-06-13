@@ -27,13 +27,14 @@ def delete_user(
             status_code=404, detail="Пользователь с таким ID не найден!"
         )
     user.deleted_at = text("now()")
-    db.commit()
-    db.refresh(user)
 
     db.query(models.Balance).filter(models.Balance.user_id == user_id).delete()
     db.query(models.Order).filter(models.Order.user_id == user_id).update(
         {models.Order.deleted_at: text("now()")}
     )
+    
+    db.commit()
+    db.refresh(user)
     return {"success": True}
 
 
@@ -138,6 +139,7 @@ def deposit(
     functions.deposit_balance(
         db, user_id=user.id, instrument_id=instrument.id, amount=payload.amount
     )
+    db.commit()
 
     return {"success": True}
 
@@ -173,5 +175,6 @@ def withdraw(
     functions.withdraw_balance(
         db, user_id=user.id, instrument_id=instrument.id, amount=payload.amount
     )
+    db.commit()
 
     return {"success": True}

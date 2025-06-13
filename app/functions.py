@@ -6,7 +6,7 @@ from sqlalchemy import and_, func, text
 
 
 def market_order_processing(db:Session, order:models.Order, user_rub_balance:float):
-    need_quantity = order.quantity
+    # need_quantity = order.quantity
     final_price = 0
     opposite_order_direction = (
         models.DirectionsOrders.BUY
@@ -107,7 +107,7 @@ def deposit_balance(db: Session, user_id: str, instrument_id: str, amount: float
         new_balance_instance = models.Balance(
             user_id=user_id, instrument_id=instrument_id, amount=amount
         )
-        db.add(new_balance_instance)
+        # db.add(new_balance_instance)
         # db.commit()
         # db.refresh(new_balance_instance)
 
@@ -132,7 +132,7 @@ def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: floa
             raise HTTPException(
                 status_code=410, detail="Баланс не может опустится ниже 0!"
             )
-        # else:
+        else:
             # db.commit()
             # db.refresh(balance_instance)
         return {"success": True}
@@ -166,18 +166,18 @@ def unlock_custom_balance(db: Session, user_id: str, amount: int, instrument_id:
         balance.locked -= amount
         # db.commit()
         # db.refresh(balance)
-    else:
-        user = db.query(models.User).filter(models.User.id == user_id).first()
-        print(f"user_id - {user.id}")
-        print(f"finding instrument_id - {instrument_id}")
-        try:
-            for balance in user.balance:
-                print(
-                    f"user balance - {balance.instrument_id}, amount - {balance.amount}, locked - {balance.locked}"
-                )
-        except:
-            print(user.balance)
-        print("balance not found")
+    # else:
+    #     user = db.query(models.User).filter(models.User.id == user_id).first()
+    #     print(f"user_id - {user.id}")
+    #     print(f"finding instrument_id - {instrument_id}")
+    #     try:
+    #         for balance in user.balance:
+    #             print(
+    #                 f"user balance - {balance.instrument_id}, amount - {balance.amount}, locked - {balance.locked}"
+    #             )
+    #     except:
+    #         print(user.balance)
+    #     print("balance not found")
 
 
 def lock_custom_balance(db: Session, user_id: str, amount: int, instrument_id: str):
