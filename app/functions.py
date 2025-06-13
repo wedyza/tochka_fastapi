@@ -132,7 +132,7 @@ def withdraw_balance(db: Session, user_id: str, instrument_id: str, amount: floa
             raise HTTPException(
                 status_code=410, detail="Баланс не может опустится ниже 0!"
             )
-        else:
+        # else:
             # db.commit()
             # db.refresh(balance_instance)
         return {"success": True}
