@@ -77,6 +77,7 @@ async def get_orderbook(
         .filter(models.Order.instrument_id == ticker_entity.id)
         .filter(models.Order.status != models.StatusOrders.EXECUTED)
         .filter(models.Order.status != models.StatusOrders.CANCELLED)
+        .filter(models.Order.price != 0)
     )
     return {
         "bid_levels": base_orders.filter(
