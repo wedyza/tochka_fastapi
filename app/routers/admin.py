@@ -30,9 +30,9 @@ def delete_user(
     
     db.commit()
 
-    db.query(models.User).filter(models.User.id == user_id).delete()
     db.query(models.Balance).filter(models.Balance.user_id == user_id).delete()
     db.query(models.Order).filter(models.Order.user_id == user_id).delete()
+    db.query(models.User).filter(models.User.id == user_id).delete()
     return {"success": True}
 
 
@@ -94,14 +94,11 @@ def delete_instrument(
 
     instrument.deleted_at = text("now()")
 
-    db.query(models.Instrument).filter(and_(
-        models.Instrument.ticker == ticker, models.Instrument.deleted_at == None
-    )
-).delete()
     db.query(models.Balance).filter(
         models.Balance.instrument_id == instrument.id
     ).delete()
     db.query(models.Order).filter(models.Order.instrument_id == instrument.id).delete()
+    db.query(models.Instrument).filter(and_(models.Instrument.ticker == ticker, models.Instrument.deleted_at == None)).delete()
     db.commit()
 
     return {"success": True}

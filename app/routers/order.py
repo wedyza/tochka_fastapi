@@ -115,7 +115,6 @@ def delete_order(
         )
         .first()
     )
-    db.query(models.Order).filter(models.Order.id == order.id).delete()
     if order.direction == models.DirectionsOrders.BUY:
         unlock_custom_balance(
             db,
@@ -128,6 +127,7 @@ def delete_order(
             db, order.user_id, order.quantity - order.filled, order.instrument_id
         )
 
+    db.query(models.Order).filter(models.Order.id == order.id).delete()
     db.commit()
 
     return {"success": True}
