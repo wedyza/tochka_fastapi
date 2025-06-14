@@ -26,7 +26,7 @@ def delete_user(
         raise HTTPException(
             status_code=404, detail="Пользователь с таким ID не найден!"
         )
-    user.deleted_at = text("now()")
+    # user.deleted_at = text("now()")
     
     db.commit()
 
@@ -92,7 +92,7 @@ def delete_instrument(
             status_code=404, detail="Не найдено инструмента с таким тикером!"
         )
 
-    instrument.deleted_at = text("now()")
+    # instrument.deleted_at = text("now()")
 
     db.query(models.Balance).filter(
         models.Balance.instrument_id == instrument.id

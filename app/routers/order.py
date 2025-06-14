@@ -103,8 +103,8 @@ def delete_order(
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
-    order.deleted_at = text("now()")
-    order.status = models.StatusOrders.CANCELLED
+    # order.deleted_at = text("now()")
+    # order.status = models.StatusOrders.CANCELLED
 
     rub_instrument = (
         db.query(models.Instrument)
