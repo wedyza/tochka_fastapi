@@ -220,8 +220,8 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     buyer = db.query(models.User).filter(models.User.id == buy_order.user_id).first()
     seller = db.query(models.User).filter(models.User.id == sell_order.user_id).first()
 
-    buy_order = db.query(models.Order).with_for_update().get(buy_order.id)
-    sell_order = db.query(models.Order).with_for_update().get(sell_order.id)
+    # buy_order = db.query(models.Order).with_for_update().get(buy_order.id)
+    # sell_order = db.query(models.Order).with_for_update().get(sell_order.id)
     
     buy_quantity = buy_order.quantity - buy_order.filled
     sell_quantity = sell_order.quantity - sell_order.filled
@@ -286,17 +286,3 @@ def making_a_deal(buy_order: models.Order, sell_order: models.Order, db: Session
     db.refresh(buy_order)
     db.refresh(sell_order)
     db.refresh(transaction)
-
-
-
-    # except Exception as e:
-    #     try:
-    #         print("buyer balance:")
-    #         for b in buyer.balance:
-    #             print(f"{b.instrument_id} - {b.amount}")
-    #     except:
-    #         print('Ничего нет')
-    #     finally:
-    #         print(f"buyer_id - {buyer.id}")
-    #         print(f"seller_id - {seller.id}")
-    #         raise e
