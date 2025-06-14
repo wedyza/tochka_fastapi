@@ -26,13 +26,14 @@ def delete_user(
         raise HTTPException(
             status_code=404, detail="Пользователь с таким ID не найден!"
         )
-    # user.deleted_at = text("now()")
+    user.deleted_at = text("now()")
     
 
     db.query(models.Balance).filter(models.Balance.user_id == user_id).delete()
     db.query(models.Order).filter(models.Order.user_id == user_id).delete()
-    db.query(models.User).filter(models.User.id == user_id).delete()
+    # db.query(models.User).filter(models.User.id == user_id).delete()
     db.commit()
+    db.refresh(user)
     return {"success": True}
 
 
@@ -92,14 +93,15 @@ def delete_instrument(
             status_code=404, detail="Не найдено инструмента с таким тикером!"
         )
 
-    # instrument.deleted_at = text("now()")
+    instrument.deleted_at = text("now()")
 
     db.query(models.Balance).filter(
         models.Balance.instrument_id == instrument.id
     ).delete()
     db.query(models.Order).filter(models.Order.instrument_id == instrument.id).delete()
-    db.query(models.Instrument).filter(and_(models.Instrument.ticker == ticker, models.Instrument.deleted_at == None)).delete()
+    # db.query(models.Instrument).filter(and_(models.Instrument.ticker == ticker, models.Instrument.deleted_at == None)).delete()
     db.commit()
+    db.refresh(instrument)
 
     return {"success": True}
 
