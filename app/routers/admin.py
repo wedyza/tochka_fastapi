@@ -28,11 +28,11 @@ def delete_user(
         )
     # user.deleted_at = text("now()")
     
-    db.commit()
 
     db.query(models.Balance).filter(models.Balance.user_id == user_id).delete()
     db.query(models.Order).filter(models.Order.user_id == user_id).delete()
     db.query(models.User).filter(models.User.id == user_id).delete()
+    db.commit()
     return {"success": True}
 
 
